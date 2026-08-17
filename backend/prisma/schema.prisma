@@ -1,0 +1,298 @@
+// Explore N Bite — Prisma schema (MySQL)
+// Source of truth: Phase 1.5 Decision & Architecture Lock Report, Section 4.
+// Approved decisions encoded here:
+//  - Categories are flat (no parent_id)
+//  - A post has exactly one category (required FK, not many-to-many)
+//  - Tags are many-to-many via post_tags
+//  - Comments are flat (no parent_comment_id / no self-relation)
+//  - Menu items are flat (no parent_id) and support page / category / custom_url
+//  - No related_posts table — related posts are computed at query time
+//  - No views_count column — view counter is deferred
+//  - Media is a standalone reusable library; content tables store plain image
+//    URLs (no polymorphic media-attachment table)
+//  - Settings is a singleton row (id always 1)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth / people
+// ---------------------------------------------------------------------------
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(190)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  uploadedMedia Media[]
+
+  @@map("admins")
+}
+
+model Author {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  bio          String?  @db.Text
+  photoUrl     String?  @map("photo_url") @db.VarChar(500)
+  facebookUrl  String?  @map("facebook_url") @db.VarChar(300)
+  twitterUrl   String?  @map("twitter_url") @db.VarChar(300)
+  instagramUrl String?  @map("instagram_url") @db.VarChar(300)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  posts Post[]
+
+  @@map("authors")
+}
+
+// ---------------------------------------------------------------------------
+// Taxonomy
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(120)
+  description String?  @db.VarChar(500)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  posts     Post[]
+  menuItems MenuItem[]
+
+  @@map("categories")
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(80)
+  slug String @unique @db.VarChar(100)
+
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+// ---------------------------------------------------------------------------
+// Posts
+// ---------------------------------------------------------------------------
+
+enum PostStatus {
+  draft
+  published
+}
+
+model Post {
+  id               Int        @id @default(autoincrement())
+  title            String     @db.VarChar(200)
+  slug             String     @unique @db.VarChar(220)
+  categoryId       Int        @map("category_id")
+  authorId         Int        @map("author_id")
+  featuredImageUrl String?    @map("featured_image_url") @db.VarChar(500)
+  shortDescription String?    @map("short_description") @db.VarChar(300)
+  content          String     @db.LongText
+  status           PostStatus @default(draft)
+  allowComments    Boolean    @default(true) @map("allow_comments")
+  publishDate      DateTime   @default(now()) @map("publish_date")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author   Author    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  tags     PostTag[]
+  comments Comment[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status, publishDate])
+  @@map("posts")
+}
+
+model PostTag {
+  postId Int @map("post_id")
+  tagId  Int @map("tag_id")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@map("post_tags")
+}
+
+// ---------------------------------------------------------------------------
+// Static pages
+// ---------------------------------------------------------------------------
+
+model Page {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(200)
+  slug         String   @unique @db.VarChar(220)
+  content      String   @db.LongText
+  showInMenu   Boolean  @default(false) @map("show_in_menu")
+  menuPosition Int?     @map("menu_position")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  menuItems MenuItem[]
+
+  @@map("pages")
+}
+
+// ---------------------------------------------------------------------------
+// Books
+// ---------------------------------------------------------------------------
+
+model Book {
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(200)
+  coverImageUrl String?  @map("cover_image_url") @db.VarChar(500)
+  description   String   @db.Text
+  publishedYear Int?     @map("published_year") @db.Year
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  buyLinks BookBuyLink[]
+
+  @@map("books")
+}
+
+model BookBuyLink {
+  id           Int    @id @default(autoincrement())
+  bookId       Int    @map("book_id")
+  platformName String @map("platform_name") @db.VarChar(80)
+  url          String @db.VarChar(500)
+  sortOrder    Int    @default(0) @map("sort_order")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@map("book_buy_links")
+}
+
+// ---------------------------------------------------------------------------
+// Awards / mentions
+// ---------------------------------------------------------------------------
+
+model Award {
+  id           Int       @id @default(autoincrement())
+  title        String    @db.VarChar(200)
+  imageUrl     String?   @map("image_url") @db.VarChar(500)
+  sourceLink   String?   @map("source_link") @db.VarChar(500)
+  dateReceived DateTime? @map("date_received") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@map("awards")
+}
+
+// ---------------------------------------------------------------------------
+// Comments (flat — no threading)
+// ---------------------------------------------------------------------------
+
+enum CommentStatus {
+  pending
+  approved
+  spam
+}
+
+model Comment {
+  id         Int           @id @default(autoincrement())
+  postId     Int           @map("post_id")
+  readerName String        @map("reader_name") @db.VarChar(120)
+  email      String        @db.VarChar(190)
+  message    String        @db.Text
+  status     CommentStatus @default(pending)
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, status])
+  @@map("comments")
+}
+
+// ---------------------------------------------------------------------------
+// Menu (flat — no nesting; page / category / custom_url target)
+// ---------------------------------------------------------------------------
+
+enum MenuLinkType {
+  page
+  category
+  custom_url
+}
+
+model MenuItem {
+  id         Int          @id @default(autoincrement())
+  label      String       @db.VarChar(80)
+  linkType   MenuLinkType @map("link_type")
+  pageId     Int?         @map("page_id")
+  categoryId Int?         @map("category_id")
+  customUrl  String?      @map("custom_url") @db.VarChar(500)
+  sortOrder  Int          @default(0) @map("sort_order")
+
+  page     Page?     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+// ---------------------------------------------------------------------------
+// Newsletter
+// ---------------------------------------------------------------------------
+
+enum SubscriberStatus {
+  active
+  unsubscribed
+}
+
+model Subscriber {
+  id           Int              @id @default(autoincrement())
+  email        String           @unique @db.VarChar(190)
+  status       SubscriberStatus @default(active)
+  subscribedAt DateTime         @default(now()) @map("subscribed_at")
+
+  @@map("subscribers")
+}
+
+// ---------------------------------------------------------------------------
+// Media library
+// ---------------------------------------------------------------------------
+
+model Media {
+  id         Int      @id @default(autoincrement())
+  fileUrl    String   @map("file_url") @db.VarChar(500)
+  fileName   String   @map("file_name") @db.VarChar(255)
+  altText    String?  @map("alt_text") @db.VarChar(255)
+  uploadedBy Int?     @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  uploader Admin? @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  @@index([uploadedBy])
+  @@map("media")
+}
+
+// ---------------------------------------------------------------------------
+// Settings (singleton)
+// ---------------------------------------------------------------------------
+
+model Settings {
+  id              Int     @id @default(1)
+  siteTitle       String  @map("site_title") @db.VarChar(150)
+  logoUrl         String? @map("logo_url") @db.VarChar(500)
+  socialFacebook  String? @map("social_facebook") @db.VarChar(300)
+  socialTwitter   String? @map("social_twitter") @db.VarChar(300)
+  socialInstagram String? @map("social_instagram") @db.VarChar(300)
+  contactEmail    String  @map("contact_email") @db.VarChar(190)
+  footerText      String? @map("footer_text") @db.VarChar(300)
+
+  @@map("settings")
+}
