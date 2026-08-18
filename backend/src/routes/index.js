@@ -16,6 +16,7 @@ const subscriberRoutes = require("./subscriber.routes");
 const publicSubscriberRoutes = require("./publicSubscriber.routes");
 const mediaRoutes = require("./media.routes");
 const settingsRoutes = require("./settings.routes");
+const menuItemRoutes = require("./menuItem.routes");
 
 const router = express.Router();
 
@@ -52,5 +53,6 @@ router.use("/admin/comments", requireAdmin, commentRoutes);
 router.use("/admin/subscribers", requireAdmin, subscriberRoutes);
 router.use("/admin/media", requireAdmin, mediaRoutes);
 router.use("/admin/settings", requireAdmin, settingsRoutes);
+router.use("/admin/menu", requireAdmin, menuItemRoutes);
 
 module.exports = router;

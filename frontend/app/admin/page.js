@@ -15,6 +15,7 @@ const MODULES = [
   { href: "/admin/comments", label: "Comments", description: "Moderate reader comments." },
   { href: "/admin/subscribers", label: "Subscribers", description: "Newsletter subscriber list." },
   { href: "/admin/settings", label: "Settings", description: "Site title, logo, contact, and social links." },
+  { href: "/admin/menu", label: "Menu", description: "Site navigation — pages, categories, and custom links." },
 ];
 
 // Authentication verification page + navigation hub.
