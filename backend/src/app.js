@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const { env } = require("./config/env");
 const routes = require("./routes");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const { UPLOADS_DIR } = require("./middleware/upload");
 
 function createApp() {
   const app = express();
@@ -31,6 +32,21 @@ function createApp() {
   if (env.nodeEnv !== "test") {
     app.use(morgan(env.nodeEnv === "development" ? "dev" : "combined"));
   }
+
+  // Static uploaded images. Scoped ONLY to this one route: Helmet's default
+  // Cross-Origin-Resource-Policy: same-origin (visible on every other
+  // response) would otherwise stop the frontend, a different origin, from
+  // embedding these images via <img src>. express.static only ever serves
+  // files that exist inside UPLOADS_DIR — it cannot expose .env, src/,
+  // prisma/, or anything outside that one directory.
+  app.use(
+    "/uploads",
+    (req, res, next) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+      next();
+    },
+    express.static(UPLOADS_DIR)
+  );
 
   app.use("/api", routes);
 

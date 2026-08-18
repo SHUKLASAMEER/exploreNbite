@@ -12,6 +12,9 @@ const bookRoutes = require("./book.routes");
 const awardRoutes = require("./award.routes");
 const commentRoutes = require("./comment.routes");
 const publicCommentRoutes = require("./publicComment.routes");
+const subscriberRoutes = require("./subscriber.routes");
+const publicSubscriberRoutes = require("./publicSubscriber.routes");
+const mediaRoutes = require("./media.routes");
 
 const router = express.Router();
 
@@ -22,6 +25,10 @@ router.use("/health", healthRoutes);
 // module (that's /admin/posts below) and not wrapped with requireAdmin —
 // the one write endpoint a visitor can call without logging in.
 router.use("/posts", publicCommentRoutes);
+
+// Public — POST /api/subscribers only. Same pattern as the comments route
+// above: a separate public router mounted outside /admin/*.
+router.use("/subscribers", publicSubscriberRoutes);
 
 // /api/admin/auth mixes public (login/logout) and protected (me) routes
 // internally — see routes/auth.routes.js — so it is NOT blanket-wrapped
@@ -41,5 +48,7 @@ router.use("/admin/pages", requireAdmin, pageRoutes);
 router.use("/admin/books", requireAdmin, bookRoutes);
 router.use("/admin/awards", requireAdmin, awardRoutes);
 router.use("/admin/comments", requireAdmin, commentRoutes);
+router.use("/admin/subscribers", requireAdmin, subscriberRoutes);
+router.use("/admin/media", requireAdmin, mediaRoutes);
 
 module.exports = router;
