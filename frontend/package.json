@@ -1,0 +1,27 @@
+{
+  "name": "explorenbite-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Explore N Bite — Next.js frontend (App Router). Talks to the separate Express API in backend/ over HTTP; no server-side business logic, database access, or auth verification lives here.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@tiptap/pm": "^3.30.1",
+    "@tiptap/react": "^3.30.1",
+    "@tiptap/starter-kit": "^3.30.1",
+    "next": "16.3.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.3.1"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
+  }
+}
