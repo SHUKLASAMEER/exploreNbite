@@ -11,4 +11,13 @@ const update = asyncHandler(async (req, res) => {
   res.json({ settings });
 });
 
-module.exports = { getOne, update };
+// Public — no req.admin available here. Same data as getOne() (Settings has
+// no credential/secret fields — see prisma/schema.prisma), just reachable
+// without authentication so the public site can render branding/footer/
+// social/contact info.
+const getPublic = asyncHandler(async (req, res) => {
+  const settings = await settingsService.get();
+  res.json({ settings });
+});
+
+module.exports = { getOne, update, getPublic };

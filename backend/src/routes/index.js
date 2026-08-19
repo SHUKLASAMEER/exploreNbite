@@ -17,6 +17,8 @@ const publicSubscriberRoutes = require("./publicSubscriber.routes");
 const mediaRoutes = require("./media.routes");
 const settingsRoutes = require("./settings.routes");
 const menuItemRoutes = require("./menuItem.routes");
+const publicMenuRoutes = require("./publicMenu.routes");
+const publicSettingsRoutes = require("./publicSettings.routes");
 
 const router = express.Router();
 
@@ -31,6 +33,13 @@ router.use("/posts", publicCommentRoutes);
 // Public — POST /api/subscribers only. Same pattern as the comments route
 // above: a separate public router mounted outside /admin/*.
 router.use("/subscribers", publicSubscriberRoutes);
+
+// Public — GET /api/menu and GET /api/settings only, for the public site's
+// navigation and branding/footer/social/contact info. Same pattern as the
+// comments/subscribers public routers above; the admin read/write surfaces
+// stay at /admin/menu and /admin/settings below, untouched.
+router.use("/menu", publicMenuRoutes);
+router.use("/settings", publicSettingsRoutes);
 
 // /api/admin/auth mixes public (login/logout) and protected (me) routes
 // internally — see routes/auth.routes.js — so it is NOT blanket-wrapped

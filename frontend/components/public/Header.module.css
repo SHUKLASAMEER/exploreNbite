@@ -1,0 +1,150 @@
+.header {
+  border-bottom: 1px solid #eee;
+  background: var(--background);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.siteTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.navLink {
+  font-size: 0.95rem;
+}
+
+.navLink:hover {
+  opacity: 0.7;
+}
+
+.menuToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.menuIcon {
+  position: relative;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  transition: background 0.2s ease;
+}
+
+.menuIcon::before,
+.menuIcon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.menuIcon::before {
+  top: -7px;
+}
+
+.menuIcon::after {
+  top: 7px;
+}
+
+.menuIcon[data-open="true"] {
+  background: transparent;
+}
+
+.menuIcon[data-open="true"]::before {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.menuIcon[data-open="true"]::after {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0 1.5rem 1rem;
+}
+
+.mobileNav a {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95rem;
+}
+
+.navNotice {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.skeletonLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: #eee;
+}
+
+.skeletonNav {
+  width: 180px;
+  height: 20px;
+  border-radius: 4px;
+  background: #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skeletonLogo,
+  .skeletonNav {
+    background: #222;
+  }
+
+  .mobileNav a {
+    border-bottom-color: #222;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktopNav {
+    display: flex;
+  }
+
+  .menuToggle {
+    display: none;
+  }
+
+  .mobileNav {
+    display: none;
+  }
+}

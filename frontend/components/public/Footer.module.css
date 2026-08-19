@@ -1,0 +1,101 @@
+.footer {
+  border-top: 1px solid #eee;
+  background: var(--background);
+  padding: 2rem 1.5rem 1.5rem;
+  margin-top: auto;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.siteTitle {
+  font-weight: 700;
+}
+
+.footerText {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-content: flex-start;
+}
+
+.links a {
+  font-size: 0.9rem;
+}
+
+.links a:hover {
+  opacity: 0.7;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.social {
+  display: flex;
+  gap: 1rem;
+}
+
+.social a:hover {
+  opacity: 0.7;
+}
+
+.notice {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.copyright {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.skeletonLine {
+  width: 220px;
+  height: 16px;
+  border-radius: 4px;
+  background: #eee;
+}
+
+.skeletonLineShort {
+  width: 140px;
+  height: 16px;
+  border-radius: 4px;
+  background: #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+  .skeletonLine,
+  .skeletonLineShort {
+    background: #222;
+  }
+}
+
+@media (min-width: 768px) {
+  .inner {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}

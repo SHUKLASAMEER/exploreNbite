@@ -31,4 +31,12 @@ const reorder = asyncHandler(async (req, res) => {
   res.json({ menuItems });
 });
 
-module.exports = { list, create, getOne, update, remove, reorder };
+// Public — no req.admin available here. Same data as list() (there is no
+// "published" concept for menu items in the schema), just reachable without
+// authentication for the public site's navigation.
+const getPublic = asyncHandler(async (req, res) => {
+  const menuItems = await menuItemService.list();
+  res.json({ menuItems });
+});
+
+module.exports = { list, create, getOne, update, remove, reorder, getPublic };
