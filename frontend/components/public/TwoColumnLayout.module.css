@@ -1,0 +1,44 @@
+/* Content container (max-width: 1160px) + main/sidebar split — taken from
+   the live site's .boxed-wrapper / .main-container / .sidebar-right rules.
+   Collapses to a single column below 980px (the live site's own
+   `col1-rsidebar` breakpoint), sidebar moving below the main content. */
+.container {
+  max-width: var(--enb-content-width);
+  margin: 0 auto;
+  padding: 40px 40px 60px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 37px;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar {
+  flex: 0 0 var(--enb-sidebar-width);
+  width: var(--enb-sidebar-width);
+}
+
+@media screen and (max-width: 980px) {
+  .container {
+    padding: 30px 20px 50px;
+  }
+
+  .columns {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    flex: none;
+  }
+}

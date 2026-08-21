@@ -26,4 +26,11 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, create, getOne, update, remove };
+// Public — no req.admin available here. Same data as list() — Award has no
+// fields unsafe for public exposure.
+const listPublic = asyncHandler(async (req, res) => {
+  const awards = await awardService.list();
+  res.json({ awards });
+});
+
+module.exports = { list, create, getOne, update, remove, listPublic };

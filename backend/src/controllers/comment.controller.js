@@ -27,4 +27,11 @@ const createPublic = asyncHandler(async (req, res) => {
   res.status(201).json({ comment });
 });
 
-module.exports = { list, getOne, updateStatus, remove, createPublic };
+// Public — no req.admin available here. Approved comments only (see
+// commentService.listPublicByPost) for display under a single post.
+const listPublicByPost = asyncHandler(async (req, res) => {
+  const comments = await commentService.listPublicByPost(req.params.postId);
+  res.json({ comments });
+});
+
+module.exports = { list, getOne, updateStatus, remove, createPublic, listPublicByPost };

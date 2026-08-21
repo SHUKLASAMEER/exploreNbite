@@ -31,6 +31,7 @@ async function list(query) {
   const limit = clampInt(query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
   const search = typeof query.search === "string" ? query.search.trim() : "";
   const categoryId = Number(query.category);
+  const authorId = Number(query.author);
   const status = query.status;
 
   const where = {};
@@ -42,6 +43,12 @@ async function list(query) {
   }
   if (query.category && Number.isInteger(categoryId) && categoryId > 0) {
     where.categoryId = categoryId;
+  }
+  // `author` filter added for the public author-archive page (Phase 3 Part
+  // 2) — optional and additive, same shape as the `category` filter above;
+  // omitted entirely when absent so existing callers are unaffected.
+  if (query.author && Number.isInteger(authorId) && authorId > 0) {
+    where.authorId = authorId;
   }
   if (status && VALID_STATUSES.includes(status)) {
     where.status = status;
@@ -128,6 +135,18 @@ async function getById(rawId) {
   return toPublicPost(post);
 }
 
+// Public — no req.admin available here. Unlike getById() (used only by the
+// admin editor, which legitimately needs to load a draft), this always
+// enforces status: "published" so a public URL can never expose a draft or
+// leak its content, regardless of how the slug was discovered.
+async function getBySlug(slug) {
+  const post = await prisma.post.findUnique({ where: { slug }, include: POST_INCLUDE });
+  if (!post || post.status !== "published") {
+    throw new NotFoundError("Post not found.");
+  }
+  return toPublicPost(post);
+}
+
 async function update(rawId, body) {
   const id = parseId(rawId);
 
@@ -191,4 +210,4 @@ async function remove(rawId) {
   await prisma.post.delete({ where: { id } });
 }
 
-module.exports = { list, create, getById, update, remove };
+module.exports = { list, create, getById, getBySlug, update, remove };

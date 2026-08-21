@@ -1,0 +1,24 @@
+/* .page-title on the live site — used for category archive headers, static
+   Page titles, and the Books/Awards grid headers. */
+.wrap {
+  text-align: center;
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--enb-border);
+}
+
+.title {
+  font-size: 40px;
+  line-height: 44px;
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
+}
+
+.description {
+  display: inline-block;
+  max-width: 700px;
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 24.2px;
+  color: var(--enb-text);
+}

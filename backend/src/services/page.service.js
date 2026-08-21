@@ -51,6 +51,17 @@ async function getById(rawId) {
   return page;
 }
 
+// Public — no req.admin available here. Page has no draft/published
+// concept in the schema (see prisma/schema.prisma), so any existing page is
+// publicly visible once linked — plain slug lookup, no extra filter.
+async function getBySlug(slug) {
+  const page = await prisma.page.findUnique({ where: { slug } });
+  if (!page) {
+    throw new NotFoundError("Page not found.");
+  }
+  return page;
+}
+
 async function update(rawId, body) {
   const id = parseId(rawId);
 
@@ -104,4 +115,4 @@ async function remove(rawId) {
   await prisma.page.delete({ where: { id } });
 }
 
-module.exports = { list, create, getById, update, remove };
+module.exports = { list, create, getById, getBySlug, update, remove };

@@ -19,16 +19,25 @@ const settingsRoutes = require("./settings.routes");
 const menuItemRoutes = require("./menuItem.routes");
 const publicMenuRoutes = require("./publicMenu.routes");
 const publicSettingsRoutes = require("./publicSettings.routes");
+const publicPostRoutes = require("./publicPost.routes");
+const publicCategoryRoutes = require("./publicCategory.routes");
+const publicAuthorRoutes = require("./publicAuthor.routes");
+const publicBookRoutes = require("./publicBook.routes");
+const publicAwardRoutes = require("./publicAward.routes");
+const publicPageRoutes = require("./publicPage.routes");
 
 const router = express.Router();
 
 // Public.
 router.use("/health", healthRoutes);
 
-// Public — POST /api/posts/:postId/comments only. Not an admin Posts
-// module (that's /admin/posts below) and not wrapped with requireAdmin —
-// the one write endpoint a visitor can call without logging in.
+// Public — GET/POST /api/posts/:postId/comments (publicCommentRoutes) plus
+// GET /api/posts and GET /api/posts/:slug (publicPostRoutes) — two routers
+// mounted at the same base path, matched by distinct sub-paths, same as any
+// other Express router stack. Not the admin Posts module (that's
+// /admin/posts below) and not wrapped with requireAdmin.
 router.use("/posts", publicCommentRoutes);
+router.use("/posts", publicPostRoutes);
 
 // Public — POST /api/subscribers only. Same pattern as the comments route
 // above: a separate public router mounted outside /admin/*.
@@ -40,6 +49,18 @@ router.use("/subscribers", publicSubscriberRoutes);
 // stay at /admin/menu and /admin/settings below, untouched.
 router.use("/menu", publicMenuRoutes);
 router.use("/settings", publicSettingsRoutes);
+
+// Public — GET /api/categories(/:slug), /api/authors(/:id), /api/books,
+// /api/awards, /api/pages/:slug — the public-site read surface for the
+// remaining CMS models (Phase 3 Part 2). Same pattern throughout: separate
+// public router, no requireAdmin, reuses the existing service layer. Each
+// admin CRUD surface (/admin/categories, /admin/authors, /admin/books,
+// /admin/awards, /admin/pages below) is untouched.
+router.use("/categories", publicCategoryRoutes);
+router.use("/authors", publicAuthorRoutes);
+router.use("/books", publicBookRoutes);
+router.use("/awards", publicAwardRoutes);
+router.use("/pages", publicPageRoutes);
 
 // /api/admin/auth mixes public (login/logout) and protected (me) routes
 // internally — see routes/auth.routes.js — so it is NOT blanket-wrapped

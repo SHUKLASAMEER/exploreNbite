@@ -1,47 +1,120 @@
+/* Three-tier header matching the live site's actual structure (see
+   HeaderClient.js's top comment): top-bar (social) / brand row (centered
+   logo) / nav bar (centered menu, own box-shadow) — not a single row. */
 .header {
-  border-bottom: 1px solid #eee;
-  background: var(--background);
+  background: var(--enb-bg);
 }
 
-.bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1.5rem;
-  max-width: 1200px;
+/* --- Tier 1: top bar (social icons) --- */
+.topBar {
+  border-bottom: 1px solid var(--enb-border);
+}
+
+.topBarInner {
+  max-width: var(--enb-content-width);
   margin: 0 auto;
+  padding: 8px 40px;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+
+.topBarLink {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--enb-heading);
+}
+
+.topBarLink:hover {
+  color: var(--enb-accent);
+}
+
+/* --- Tier 2: brand row (centered logo + site title) --- */
+.brandRow {
+  display: flex;
+  justify-content: center;
+  padding: 1.75rem 40px;
 }
 
 .logoLink {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  flex-shrink: 0;
 }
 
 .siteTitle {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 1.9rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   white-space: nowrap;
+  color: var(--enb-heading);
+  text-align: center;
+}
+
+/* --- Tier 3: nav bar (centered menu, own shadow) --- */
+.navBar {
+  border-top: 1px solid var(--enb-border);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  background: var(--enb-bg);
+}
+
+.navBarInner {
+  position: relative;
+  max-width: var(--enb-content-width);
+  margin: 0 auto;
+  padding: 0 40px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .desktopNav {
   display: none;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .navLink {
-  font-size: 0.95rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--enb-heading);
+  padding: 0 16px;
 }
 
 .navLink:hover {
-  opacity: 0.7;
+  color: var(--enb-accent);
+}
+
+/* Current-page nav highlight (Phase 3 Part 4). Written as compound/
+   descendant selectors on purpose so each reliably outweighs its own base
+   rule (.navLink, .mobileNav a) regardless of source order — a bare
+   `.navLinkActive` alone would tie on specificity with `.mobileNav a` and
+   could lose depending on build output order. */
+.navLink.navLinkActive {
+  color: var(--enb-accent);
+}
+
+.mobileNav .navLinkActive {
+  color: var(--enb-accent);
+  border-bottom-color: var(--enb-accent);
 }
 
 .menuToggle {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -50,7 +123,7 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  flex-shrink: 0;
+  color: var(--enb-heading);
 }
 
 .menuIcon {
@@ -96,46 +169,62 @@
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  padding: 0 1.5rem 1rem;
+  padding: 0 20px 1rem;
 }
 
 .mobileNav a {
   padding: 0.65rem 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.95rem;
+  border-bottom: 1px solid var(--enb-border);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--enb-heading);
 }
 
 .navNotice {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--enb-meta);
 }
 
 .skeletonLogo {
   width: 48px;
   height: 48px;
   border-radius: 6px;
-  background: #eee;
+  background: var(--enb-footer-bg, #eee);
+  margin: 0 auto;
 }
 
 .skeletonNav {
   width: 180px;
   height: 20px;
   border-radius: 4px;
-  background: #eee;
+  background: var(--enb-footer-bg, #eee);
+  margin: 12px auto 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .skeletonLogo,
-  .skeletonNav {
-    background: #222;
+@media (max-width: 640px) {
+  .topBarInner {
+    padding: 8px 20px;
   }
 
-  .mobileNav a {
-    border-bottom-color: #222;
+  .brandRow {
+    padding: 1.25rem 20px;
+  }
+
+  .siteTitle {
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+  }
+
+  .navBarInner {
+    padding: 0 20px;
+    min-height: 50px;
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 980px) {
   .desktopNav {
     display: flex;
   }

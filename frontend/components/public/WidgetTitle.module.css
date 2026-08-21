@@ -1,0 +1,35 @@
+/* Centered uppercase title flanked by a horizontal rule on each side —
+   taken directly from the live site's .widget-title (both sidebar and
+   footer widgets use this same treatment). */
+.wrap {
+  position: relative;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.text {
+  display: inline-block;
+  position: relative;
+  padding: 0 15px;
+  background: inherit;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  line-height: 29px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+.wrap::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--enb-border);
+}
+
+.text {
+  z-index: 1;
+}

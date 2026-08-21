@@ -121,6 +121,23 @@ async function remove(rawId) {
 // Public
 // ---------------------------------------------------------------------------
 
+// Public — no req.admin available here. Only ever returns status:
+// "approved" comments (pending/spam stay admin-only until moderated), and
+// deliberately excludes `email` from the selection, same as createPublic()'s
+// response below — a commenter's email is never exposed publicly.
+async function listPublicByPost(rawPostId) {
+  const postId = Number(rawPostId);
+  if (!Number.isInteger(postId) || postId <= 0) {
+    throw new ValidationError("Invalid post id.");
+  }
+
+  return prisma.comment.findMany({
+    where: { postId, status: "approved" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, readerName: true, message: true, createdAt: true },
+  });
+}
+
 async function createPublic(rawPostId, body) {
   const postId = Number(rawPostId);
   if (!Number.isInteger(postId) || postId <= 0) {
@@ -156,4 +173,4 @@ async function createPublic(rawPostId, body) {
   return comment;
 }
 
-module.exports = { list, getById, updateStatus, remove, createPublic };
+module.exports = { list, getById, updateStatus, remove, createPublic, listPublicByPost };

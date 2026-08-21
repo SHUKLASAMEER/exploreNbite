@@ -1,0 +1,23 @@
+.wrap {
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--font-body);
+  font-size: 22px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  color: var(--enb-heading);
+}
+
+.text {
+  color: var(--enb-meta);
+  font-size: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.error .title {
+  color: #a94442;
+}

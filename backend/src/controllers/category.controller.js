@@ -31,4 +31,16 @@ const reorder = asyncHandler(async (req, res) => {
   res.json({ categories });
 });
 
-module.exports = { list, create, getOne, update, remove, reorder };
+// Public — no req.admin available here. Same data as list()/getOne(), just
+// slug-based lookup for getPublicBySlug since public URLs use slugs.
+const listPublic = asyncHandler(async (req, res) => {
+  const categories = await categoryService.list();
+  res.json({ categories });
+});
+
+const getPublicBySlug = asyncHandler(async (req, res) => {
+  const category = await categoryService.getBySlug(req.params.slug);
+  res.json({ category });
+});
+
+module.exports = { list, create, getOne, update, remove, reorder, listPublic, getPublicBySlug };

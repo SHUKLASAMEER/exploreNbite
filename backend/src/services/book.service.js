@@ -29,6 +29,18 @@ async function list() {
   return books.map(toPublicBookListItem);
 }
 
+// Public — no req.admin available here. Unlike list() (the admin list view,
+// which strips description/buyLinks down to a count since the admin table
+// doesn't need them), the public books page wants the full row — including
+// buy links — so it can render "Buy on ..." links directly on each card
+// without a second request per book.
+async function listPublic() {
+  return prisma.book.findMany({
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    include: BOOK_INCLUDE,
+  });
+}
+
 async function create(body) {
   const data = parseBookInput(body, "create");
   const buyLinks = parseBuyLinks(body?.buyLinks) ?? [];
@@ -102,4 +114,4 @@ async function remove(rawId) {
   await prisma.book.delete({ where: { id } });
 }
 
-module.exports = { list, create, getById, update, remove };
+module.exports = { list, listPublic, create, getById, update, remove };

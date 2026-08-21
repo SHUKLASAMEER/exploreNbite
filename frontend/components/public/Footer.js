@@ -1,4 +1,5 @@
 import { getPublicSettings, getPublicMenu, resolveMenuItemHref } from "@/lib/publicApi";
+import { buildSocialLinks } from "@/lib/socialLinks";
 import styles from "./Footer.module.css";
 
 // Server Component — no interactivity needed, so unlike Header there's no
@@ -14,6 +15,7 @@ export default async function Footer() {
   ]);
 
   const siteTitle = settings?.siteTitle ?? "Explore N Bite";
+  const socialLinks = buildSocialLinks(settings);
   const footerLinks = (menuItems ?? [])
     .map((item) => ({ id: item.id, label: item.label, href: resolveMenuItemHref(item) }))
     .filter((item) => Boolean(item.href));
@@ -45,23 +47,13 @@ export default async function Footer() {
 
         <div className={styles.contact}>
           {settings?.contactEmail ? <a href={`mailto:${settings.contactEmail}`}>{settings.contactEmail}</a> : null}
-          {settings?.socialFacebook || settings?.socialTwitter || settings?.socialInstagram ? (
+          {socialLinks.length > 0 ? (
             <div className={styles.social}>
-              {settings?.socialFacebook ? (
-                <a href={settings.socialFacebook} target="_blank" rel="noopener noreferrer">
-                  Facebook
+              {socialLinks.map((link) => (
+                <a key={link.name} href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.name}
                 </a>
-              ) : null}
-              {settings?.socialTwitter ? (
-                <a href={settings.socialTwitter} target="_blank" rel="noopener noreferrer">
-                  Twitter
-                </a>
-              ) : null}
-              {settings?.socialInstagram ? (
-                <a href={settings.socialInstagram} target="_blank" rel="noopener noreferrer">
-                  Instagram
-                </a>
-              ) : null}
+              ))}
             </div>
           ) : null}
         </div>

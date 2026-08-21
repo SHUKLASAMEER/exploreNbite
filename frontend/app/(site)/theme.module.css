@@ -1,0 +1,79 @@
+/*
+ * Design tokens for the public site only — extracted from the live
+ * explorenbite.com site (WordPress "Ashe" theme: wp-content/themes/ashe/
+ * style.css, plus that site's Customizer-generated dynamic CSS) per the
+ * Phase 3 Part 2 brief ("recreate the existing site's visual structure").
+ * Scoped to .themeRoot (applied once, in this layout) via CSS custom
+ * property inheritance — every public component reads var(--enb-*) below.
+ * Never referenced by anything under /admin, which keeps its own plain
+ * Arial styling from app/globals.css untouched.
+ */
+.themeRoot {
+  --enb-accent: #ca9b52;
+  --enb-accent-hover: rgba(202, 155, 82, 0.8);
+  --enb-text: #464646;
+  --enb-heading: #030303;
+  --enb-meta: #a1a1a1;
+  --enb-border: #e8e8e8;
+  --enb-bg: #ffffff;
+  --enb-footer-bg: #f6f6f6;
+  --enb-footer-text: #333333;
+  --enb-footer-heading: #111111;
+  --enb-footer-border: #e0dbdb;
+  --enb-button-bg: #333333;
+  --enb-content-width: 1160px;
+  --enb-sidebar-width: 307px;
+  --font-heading: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-open-sans), Arial, Helvetica, sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--enb-text);
+  background: var(--enb-bg);
+}
+
+.themeRoot h1,
+.themeRoot h2,
+.themeRoot h3,
+.themeRoot h4,
+.themeRoot h5,
+.themeRoot h6 {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  color: var(--enb-heading);
+}
+
+/*
+ * Deliberately no blanket `.themeRoot a { color }` rule here — the live
+ * site only colors *content-area* links gold (`.page-content a`); nav,
+ * footer, and button links each set their own color explicitly to match
+ * the live site's actual per-region rules. See ProseContent.module.css for
+ * the content-area link color.
+ */
+
+/* Phase 3 Part 4: one visible, on-brand focus treatment for every
+ * interactive element across the public site, instead of relying on each
+ * browser's own default outline (which is fine functionally but doesn't
+ * read as an intentional part of the design). `:focus-visible` only shows
+ * for keyboard/programmatic focus, not mouse clicks, so it never adds a
+ * ring to something the user just clicked with a pointer.
+ */
+.themeRoot :global(a:focus-visible),
+.themeRoot :global(button:focus-visible),
+.themeRoot :global(input:focus-visible),
+.themeRoot :global(textarea:focus-visible) {
+  outline: 2px solid var(--enb-accent);
+  outline-offset: 2px;
+}
+
+/* Same idea for text inputs specifically — a subtle accent border on focus
+ * (in addition to the outline above) so a focused field reads clearly even
+ * when the outline is tight against a bordered input. */
+.themeRoot :global(input:focus),
+.themeRoot :global(textarea:focus) {
+  border-color: var(--enb-accent);
+}

@@ -26,4 +26,17 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, create, getOne, update, remove };
+// Public — no req.admin available here. Always forces status: "published"
+// (overriding any status the client sent), so a public request can never
+// list drafts.
+const listPublic = asyncHandler(async (req, res) => {
+  const result = await postService.list({ ...req.query, status: "published" });
+  res.json(result);
+});
+
+const getPublicBySlug = asyncHandler(async (req, res) => {
+  const post = await postService.getBySlug(req.params.slug);
+  res.json({ post });
+});
+
+module.exports = { list, create, getOne, update, remove, listPublic, getPublicBySlug };

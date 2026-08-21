@@ -1,0 +1,58 @@
+/* Renders CMS rich-text HTML (Post.content / Page.content) — typography
+   rules taken from the live site's .page-content prose styling. */
+.prose {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--enb-text);
+  overflow-wrap: break-word;
+}
+
+.prose :global(p) {
+  margin-bottom: 15px;
+}
+
+.prose :global(h1),
+.prose :global(h2),
+.prose :global(h3),
+.prose :global(h4),
+.prose :global(h5),
+.prose :global(h6) {
+  margin: 30px 0 15px;
+}
+
+.prose :global(a) {
+  color: var(--enb-accent);
+  text-decoration: underline;
+}
+
+.prose :global(a:hover) {
+  color: var(--enb-accent-hover);
+}
+
+.prose :global(img) {
+  max-width: 100%;
+  height: auto;
+  margin: 15px 0;
+}
+
+.prose :global(blockquote) {
+  border-left: 3px solid var(--enb-accent);
+  padding-left: 15px;
+  font-family: var(--font-heading);
+  font-size: 19px;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin: 20px 0;
+}
+
+.prose :global(ul) {
+  padding-left: 20px;
+  margin-bottom: 15px;
+  list-style: disc;
+}
+
+.prose :global(ol) {
+  padding-left: 25px;
+  margin-bottom: 15px;
+  list-style: decimal;
+}

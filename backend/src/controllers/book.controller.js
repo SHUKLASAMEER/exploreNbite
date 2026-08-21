@@ -26,4 +26,12 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, create, getOne, update, remove };
+// Public — no req.admin available here. Uses listPublic() (full rows incl.
+// buyLinks), not list() (the admin table's stripped-down buyLinkCount
+// shape) — the public books page renders "Buy on ..." links directly.
+const listPublic = asyncHandler(async (req, res) => {
+  const books = await bookService.listPublic();
+  res.json({ books });
+});
+
+module.exports = { list, create, getOne, update, remove, listPublic };

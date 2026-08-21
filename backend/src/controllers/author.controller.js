@@ -26,4 +26,17 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, create, getOne, update, remove };
+// Public — no req.admin available here. Same data as list()/getOne() —
+// Author has no credential/secret fields, just contact/bio info the admin
+// already intends to publish.
+const listPublic = asyncHandler(async (req, res) => {
+  const authors = await authorService.list();
+  res.json({ authors });
+});
+
+const getPublicOne = asyncHandler(async (req, res) => {
+  const author = await authorService.getById(req.params.id);
+  res.json({ author });
+});
+
+module.exports = { list, create, getOne, update, remove, listPublic, getPublicOne };

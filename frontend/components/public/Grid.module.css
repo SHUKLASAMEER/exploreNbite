@@ -1,0 +1,16 @@
+/* Shared card-grid wrapper for Books/Awards — the live site has no
+   equivalent grid (those pages are freeform content there), so this layout
+   is new, built with the same design tokens/spacing language as the rest
+   of the site rather than copying a live-site pattern that doesn't exist. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 30px;
+}
+
+@media screen and (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+  }
+}

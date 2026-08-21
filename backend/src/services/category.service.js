@@ -41,6 +41,16 @@ async function getById(rawId) {
   return category;
 }
 
+// Public — no req.admin available here. Category has no draft/published
+// concept in the schema, so this is a plain slug lookup, no extra filter.
+async function getBySlug(slug) {
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) {
+    throw new NotFoundError("Category not found.");
+  }
+  return category;
+}
+
 async function update(rawId, body) {
   const id = parseId(rawId);
 
@@ -116,4 +126,4 @@ async function reorder(rawOrder) {
   return list();
 }
 
-module.exports = { list, create, getById, update, remove, reorder };
+module.exports = { list, create, getById, getBySlug, update, remove, reorder };

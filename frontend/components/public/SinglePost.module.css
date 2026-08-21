@@ -1,0 +1,136 @@
+.media {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  margin-bottom: 25px;
+  background: var(--enb-footer-bg);
+}
+
+.media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.category {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--enb-accent);
+}
+
+.title {
+  font-size: 40px;
+  line-height: 44px;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+}
+
+.meta {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--enb-meta);
+}
+
+.meta a {
+  color: var(--enb-meta);
+}
+
+.meta a:hover {
+  color: var(--enb-accent);
+}
+
+.metaSep {
+  margin: 0 6px;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 13px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  border: 1px solid var(--enb-border);
+  color: var(--enb-meta);
+}
+
+.authorBox {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid var(--enb-border);
+}
+
+.authorAvatar {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.authorInitial {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--enb-accent);
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.authorName {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: var(--enb-heading);
+}
+
+.authorName a {
+  color: var(--enb-heading);
+}
+
+.authorName a:hover {
+  color: var(--enb-accent);
+}
+
+.authorBio {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--enb-text);
+}
+
+@media screen and (max-width: 480px) {
+  .title {
+    font-size: 28px;
+    line-height: 33px;
+  }
+
+  .authorBox {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}

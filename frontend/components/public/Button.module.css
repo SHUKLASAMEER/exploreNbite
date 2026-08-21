@@ -1,0 +1,49 @@
+/* Two button variants taken directly from the live site's CSS (Customizer
+   "Buttons" + `.read-more a` rules): outline (post-card read-more, ghost)
+   and solid (form submits, pagination, subscribe) which turns gold on
+   hover. */
+.button {
+  display: inline-block;
+  padding: 0 25px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 40px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.outline {
+  composes: button;
+  border-color: var(--enb-heading);
+  color: var(--enb-heading);
+  background: transparent;
+}
+
+.outline:hover {
+  border-color: var(--enb-accent);
+  color: var(--enb-accent);
+}
+
+.solid {
+  composes: button;
+  border-color: var(--enb-button-bg);
+  background: var(--enb-button-bg);
+  color: #ffffff;
+}
+
+.solid:hover {
+  border-color: var(--enb-accent);
+  background: var(--enb-accent);
+  color: #ffffff;
+}
+
+.solid:disabled,
+.outline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

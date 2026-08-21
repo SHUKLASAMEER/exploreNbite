@@ -26,4 +26,11 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = { list, create, getOne, update, remove };
+// Public — no req.admin available here. Slug-based lookup (public URLs use
+// slugs); Page has no draft/published concept so no extra filter applies.
+const getPublicBySlug = asyncHandler(async (req, res) => {
+  const page = await pageService.getBySlug(req.params.slug);
+  res.json({ page });
+});
+
+module.exports = { list, create, getOne, update, remove, getPublicBySlug };

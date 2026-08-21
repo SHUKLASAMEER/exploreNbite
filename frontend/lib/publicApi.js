@@ -55,13 +55,9 @@ export async function getPublicMenu() {
 // includes the resolved page/category target, but not a ready-to-use href —
 // this is the one place that turns { linkType, page, category, customUrl }
 // into a URL, so nothing else in the public UI re-implements this branching.
-//
-// Route note: /pages/[slug] and /category/[slug] are placeholders — those
-// public content routes are out of scope for this phase (Phase 3 Part 1 is
-// nav/layout foundation only) and don't exist yet, so page/category links
-// will 404 until a later phase adds them. custom_url is always a
-// fully-qualified URL (validated in backend/src/utils/validation/menuItems.js),
-// so it's returned as-is.
+// /pages/[slug] and /category/[slug] (Phase 3 Part 2) are what these now
+// resolve to. custom_url is always a fully-qualified URL (validated in
+// backend/src/utils/validation/menuItems.js), so it's returned as-is.
 export function resolveMenuItemHref(item) {
   if (item.linkType === "page") {
     return item.page?.slug ? `/pages/${item.page.slug}` : null;
@@ -73,4 +69,191 @@ export function resolveMenuItemHref(item) {
     return item.customUrl || null;
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Posts
+// ---------------------------------------------------------------------------
+
+// Returns { posts, pagination, error }. `params` may include `page`,
+// `category` (a Category id — resolve a slug via getPublicCategoryBySlug()
+// first), `author` (an Author id), `search` (matches post title). Only
+// published posts are ever returned — GET /api/posts forces that
+// server-side (backend/src/controllers/post.controller.js#listPublic), so
+// there's no client-side filtering to get wrong here.
+export async function getPublicPosts(params = {}) {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.category) qs.set("category", String(params.category));
+  if (params.author) qs.set("author", String(params.author));
+  if (params.search) qs.set("search", params.search);
+  const query = qs.toString();
+
+  try {
+    const res = await serverApiFetch(`/api/posts${query ? `?${query}` : ""}`);
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { posts: null, pagination: null, error: data?.error?.message ?? "Failed to load posts." };
+    }
+    return { posts: data?.data ?? [], pagination: data?.pagination ?? null, error: null };
+  } catch {
+    return { posts: null, pagination: null, error: "Failed to load posts." };
+  }
+}
+
+// Returns { post, error, notFound }. `notFound` is true only for a genuine
+// 404 (no such slug, or the post isn't published) — callers use that to
+// trigger Next's notFound() rather than rendering a generic error banner.
+export async function getPublicPostBySlug(slug) {
+  try {
+    const res = await serverApiFetch(`/api/posts/${encodeURIComponent(slug)}`);
+    if (res.status === 404) {
+      return { post: null, error: null, notFound: true };
+    }
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { post: null, error: data?.error?.message ?? "Failed to load this post.", notFound: false };
+    }
+    return { post: data?.post ?? null, error: null, notFound: false };
+  } catch {
+    return { post: null, error: "Failed to load this post.", notFound: false };
+  }
+}
+
+// Returns { comments, error }. Approved comments only (see
+// backend/src/services/comment.service.js#listPublicByPost) — pending/spam
+// stay admin-only.
+export async function getPublicComments(postId) {
+  try {
+    const res = await serverApiFetch(`/api/posts/${postId}/comments`);
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { comments: null, error: data?.error?.message ?? "Failed to load comments." };
+    }
+    return { comments: data?.comments ?? [], error: null };
+  } catch {
+    return { comments: null, error: "Failed to load comments." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Categories
+// ---------------------------------------------------------------------------
+
+export async function getPublicCategories() {
+  try {
+    const res = await serverApiFetch("/api/categories");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { categories: null, error: data?.error?.message ?? "Failed to load categories." };
+    }
+    return { categories: data?.categories ?? [], error: null };
+  } catch {
+    return { categories: null, error: "Failed to load categories." };
+  }
+}
+
+export async function getPublicCategoryBySlug(slug) {
+  try {
+    const res = await serverApiFetch(`/api/categories/${encodeURIComponent(slug)}`);
+    if (res.status === 404) {
+      return { category: null, error: null, notFound: true };
+    }
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { category: null, error: data?.error?.message ?? "Failed to load this category.", notFound: false };
+    }
+    return { category: data?.category ?? null, error: null, notFound: false };
+  } catch {
+    return { category: null, error: "Failed to load this category.", notFound: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Authors
+// ---------------------------------------------------------------------------
+
+export async function getPublicAuthors() {
+  try {
+    const res = await serverApiFetch("/api/authors");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { authors: null, error: data?.error?.message ?? "Failed to load authors." };
+    }
+    return { authors: data?.authors ?? [], error: null };
+  } catch {
+    return { authors: null, error: "Failed to load authors." };
+  }
+}
+
+// Author has no slug column (see prisma/schema.prisma) — id-based lookup
+// only, hence /authors/[id] rather than /authors/[slug].
+export async function getPublicAuthorById(id) {
+  try {
+    const res = await serverApiFetch(`/api/authors/${encodeURIComponent(id)}`);
+    if (res.status === 404) {
+      return { author: null, error: null, notFound: true };
+    }
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { author: null, error: data?.error?.message ?? "Failed to load this author.", notFound: false };
+    }
+    return { author: data?.author ?? null, error: null, notFound: false };
+  } catch {
+    return { author: null, error: "Failed to load this author.", notFound: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pages (generic CMS pages — About, Contact, Work With Me, etc.)
+// ---------------------------------------------------------------------------
+
+export async function getPublicPageBySlug(slug) {
+  try {
+    const res = await serverApiFetch(`/api/pages/${encodeURIComponent(slug)}`);
+    if (res.status === 404) {
+      return { page: null, error: null, notFound: true };
+    }
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { page: null, error: data?.error?.message ?? "Failed to load this page.", notFound: false };
+    }
+    return { page: data?.page ?? null, error: null, notFound: false };
+  } catch {
+    return { page: null, error: "Failed to load this page.", notFound: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Books
+// ---------------------------------------------------------------------------
+
+export async function getPublicBooks() {
+  try {
+    const res = await serverApiFetch("/api/books");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { books: null, error: data?.error?.message ?? "Failed to load books." };
+    }
+    return { books: data?.books ?? [], error: null };
+  } catch {
+    return { books: null, error: "Failed to load books." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Awards
+// ---------------------------------------------------------------------------
+
+export async function getPublicAwards() {
+  try {
+    const res = await serverApiFetch("/api/awards");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { awards: null, error: data?.error?.message ?? "Failed to load awards." };
+    }
+    return { awards: data?.awards ?? [], error: null };
+  } catch {
+    return { awards: null, error: "Failed to load awards." };
+  }
 }
