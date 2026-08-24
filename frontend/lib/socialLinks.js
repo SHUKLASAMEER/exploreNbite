@@ -1,8 +1,7 @@
-// Shared derivation of social links from Settings — used by Header (top
-// bar), Footer, and the sidebar's SocialWidget, so all three read the same
-// three optional Settings fields the same way instead of each re-deriving
-// it slightly differently. Each caller still renders its own markup/style
-// (text row, circular badges, top-bar strip) — only the data shape is
+// Shared derivation of social links from Settings — used by Header (hero
+// social strip) and Footer, so both read the same three optional Settings
+// fields the same way instead of each re-deriving it slightly differently.
+// Each caller still renders its own markup/style — only the data shape is
 // shared here.
 export function buildSocialLinks(settings) {
   return [

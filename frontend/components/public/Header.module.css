@@ -1,186 +1,99 @@
-/* Three-tier header matching the live site's actual structure (see
-   HeaderClient.js's top comment): top-bar (social) / brand row (centered
-   logo) / nav bar (centered menu, own box-shadow) — not a single row. */
+/* Hero header + nav bar — matches the reference mockups
+   (reference/exploreNbite UI/style.css: .hero / .site-nav) exactly in
+   structure: a full-width gradient hero with the site title + tagline +
+   social strip, followed by a separate white nav bar. The live-site's old
+   compact three-tier header (Phase 3 Part 3) has been replaced.
+
+   The mockups hard-code the nav as two fixed rows (7 links / 3 links)
+   because their content is static HTML. Our nav is CMS-driven
+   (GET /api/menu, variable length) so `.navRow` is a single flex-wrap
+   container instead — it reflows to as many visual rows as the configured
+   menu needs, reproducing the same "wraps to a second line" look without
+   assuming a fixed split. */
 .header {
   background: var(--enb-bg);
 }
 
-/* --- Tier 1: top bar (social icons) --- */
-.topBar {
-  border-bottom: 1px solid var(--enb-border);
-}
-
-.topBarInner {
-  max-width: var(--enb-content-width);
-  margin: 0 auto;
-  padding: 8px 40px;
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-}
-
-.topBarLink {
-  font-family: var(--font-body);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--enb-heading);
-}
-
-.topBarLink:hover {
-  color: var(--enb-accent);
-}
-
-/* --- Tier 2: brand row (centered logo + site title) --- */
-.brandRow {
-  display: flex;
-  justify-content: center;
-  padding: 1.75rem 40px;
-}
-
-.logoLink {
+/* --- Hero --- */
+.hero {
+  position: relative;
+  min-height: 460px;
+  padding: 70px 40px 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(180deg, #8ea0b8 0%, #eb9e59 35%, #fac13f 55%, #24486b 100%);
+}
+
+.social {
+  position: absolute;
+  top: 24px;
+  right: 40px;
+  display: flex;
+  gap: 16px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.socialLink {
+  color: #000;
+}
+
+.socialLink:hover {
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .siteTitle {
+  display: block;
   font-family: var(--font-heading);
   font-weight: 400;
-  font-size: 1.9rem;
+  font-size: 92px;
+  line-height: 1;
   letter-spacing: 2px;
   text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--enb-heading);
-  text-align: center;
+  margin: 0;
+  color: #000;
 }
 
-/* --- Tier 3: nav bar (centered menu, own shadow) --- */
+.tagline {
+  font-family: var(--font-body);
+  font-size: 20px;
+  margin-top: 12px;
+  color: #000;
+}
+
+/* --- Nav bar --- */
 .navBar {
-  border-top: 1px solid var(--enb-border);
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
   background: var(--enb-bg);
+  padding: 22px 20px;
 }
 
-.navBarInner {
-  position: relative;
+.navRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: 36px;
+  row-gap: 12px;
   max-width: var(--enb-content-width);
   margin: 0 auto;
-  padding: 0 40px;
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.desktopNav {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 .navLink {
   font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--enb-heading);
-  padding: 0 16px;
+  color: #000;
 }
 
-.navLink:hover {
+.navLink:hover,
+.navLinkActive {
   color: var(--enb-accent);
-}
-
-/* Current-page nav highlight (Phase 3 Part 4). Written as compound/
-   descendant selectors on purpose so each reliably outweighs its own base
-   rule (.navLink, .mobileNav a) regardless of source order — a bare
-   `.navLinkActive` alone would tie on specificity with `.mobileNav a` and
-   could lose depending on build output order. */
-.navLink.navLinkActive {
-  color: var(--enb-accent);
-}
-
-.mobileNav .navLinkActive {
-  color: var(--enb-accent);
-  border-bottom-color: var(--enb-accent);
-}
-
-.menuToggle {
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--enb-heading);
-}
-
-.menuIcon {
-  position: relative;
-  width: 22px;
-  height: 2px;
-  background: currentColor;
-  transition: background 0.2s ease;
-}
-
-.menuIcon::before,
-.menuIcon::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  width: 22px;
-  height: 2px;
-  background: currentColor;
-  transition: transform 0.2s ease;
-}
-
-.menuIcon::before {
-  top: -7px;
-}
-
-.menuIcon::after {
-  top: 7px;
-}
-
-.menuIcon[data-open="true"] {
-  background: transparent;
-}
-
-.menuIcon[data-open="true"]::before {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.menuIcon[data-open="true"]::after {
-  transform: translateY(-7px) rotate(-45deg);
-}
-
-.mobileNav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0 20px 1rem;
-}
-
-.mobileNav a {
-  padding: 0.65rem 0;
-  border-bottom: 1px solid var(--enb-border);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--enb-heading);
 }
 
 .navNotice {
@@ -188,52 +101,70 @@
   color: var(--enb-meta);
 }
 
-.skeletonLogo {
-  width: 48px;
-  height: 48px;
+/* --- Skeleton (Suspense fallback) --- */
+.skeletonHero {
+  min-height: 460px;
+  background: linear-gradient(180deg, #8ea0b8 0%, #eb9e59 35%, #fac13f 55%, #24486b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeletonTitle {
+  width: 320px;
+  max-width: 70%;
+  height: 60px;
   border-radius: 6px;
-  background: var(--enb-footer-bg, #eee);
-  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .skeletonNav {
-  width: 180px;
-  height: 20px;
-  border-radius: 4px;
-  background: var(--enb-footer-bg, #eee);
-  margin: 12px auto 0;
+  padding: 22px 0;
+  display: flex;
+  justify-content: center;
 }
 
-@media (max-width: 640px) {
-  .topBarInner {
-    padding: 8px 20px;
-  }
+.skeletonNavInner {
+  width: 260px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--enb-footer-bg, #eee);
+}
 
-  .brandRow {
-    padding: 1.25rem 20px;
+@media (max-width: 768px) {
+  .hero {
+    min-height: 300px;
+    padding: 56px 20px 40px;
   }
 
   .siteTitle {
-    font-size: 1.4rem;
+    font-size: 48px;
     letter-spacing: 1px;
   }
 
-  .navBarInner {
-    padding: 0 20px;
-    min-height: 50px;
+  .tagline {
+    font-size: 16px;
+  }
+
+  .social {
+    top: 16px;
+    right: 20px;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .navRow {
+    column-gap: 20px;
+    row-gap: 10px;
   }
 }
 
-@media (min-width: 980px) {
-  .desktopNav {
-    display: flex;
+@media (max-width: 480px) {
+  .hero {
+    min-height: 240px;
   }
 
-  .menuToggle {
-    display: none;
-  }
-
-  .mobileNav {
-    display: none;
+  .siteTitle {
+    font-size: 32px;
   }
 }
