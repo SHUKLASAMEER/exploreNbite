@@ -11,6 +11,19 @@
   margin-bottom: 15px;
 }
 
+/* Drop cap on the first paragraph — matches the reference mockups'
+   `.static-page .body-copy p:first-of-type::first-letter` (used for both
+   CMS Page content and the single-post body, since post.html's <main> also
+   carries the `.static-page` class). */
+.prose :global(p:first-of-type)::first-letter {
+  font-family: var(--font-heading);
+  font-size: 68px;
+  line-height: 0.8;
+  float: left;
+  padding-right: 10px;
+  padding-top: 8px;
+}
+
 .prose :global(h1),
 .prose :global(h2),
 .prose :global(h3),

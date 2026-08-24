@@ -1,21 +1,17 @@
-/* Single blog-grid post card, "list" layout (main column + right sidebar
-   present) — anatomy and measurements taken directly from the live site's
-   .post-media / .post-header / .post-content / .post-footer rules. */
+/* Single blog-grid post card — matches reference/exploreNbite UI/
+   style.css's `.post-card` exactly: full-width image, centered
+   category/title/date, left-aligned excerpt with a drop-cap first letter,
+   centered outline "Read More" button, a divider, then the author row. */
 .card {
-  margin-bottom: 30px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid var(--enb-border);
-}
-
-.card:last-child {
-  border-bottom: none;
+  margin-bottom: 60px;
+  text-align: center;
 }
 
 .media {
-  position: relative;
   display: block;
-  aspect-ratio: 1 / 1;
-  margin-bottom: 18px;
+  width: 100%;
+  height: 420px;
+  margin-bottom: 22px;
   overflow: hidden;
   background: var(--enb-footer-bg);
 }
@@ -27,30 +23,16 @@
   display: block;
 }
 
-/* Dark overlay on hover — matches the live site's .image-overlay treatment
-   on post thumbnails. */
-.media::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(73, 73, 73, 0.3);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.media:hover::after {
-  opacity: 1;
-}
-
 .header {
   text-align: center;
 }
 
 .category {
-  display: inline-block;
-  margin-bottom: 8px;
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-body);
+  font-weight: 700;
   font-size: 12px;
-  font-weight: bold;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--enb-accent);
@@ -61,10 +43,9 @@
 }
 
 .title {
-  font-size: 32px;
-  line-height: 38px;
-  letter-spacing: 0.5px;
-  margin-bottom: 13px;
+  font-size: 38px;
+  line-height: 1.2;
+  margin: 0 0 12px;
 }
 
 .title a {
@@ -72,43 +53,58 @@
 }
 
 .title a:hover {
-  color: rgba(3, 3, 3, 0.75);
+  color: var(--enb-accent);
 }
 
 .meta {
-  margin-bottom: 17px;
+  display: block;
+  margin-bottom: 22px;
+  font-family: var(--font-heading);
   font-style: italic;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--enb-meta);
 }
 
 .excerpt {
-  text-align: justify;
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.7;
   color: var(--enb-text);
   margin-bottom: 0;
 }
 
+.excerpt::first-letter {
+  font-family: var(--font-heading);
+  font-size: 68px;
+  line-height: 0.8;
+  float: left;
+  padding-right: 10px;
+  padding-top: 8px;
+}
+
 .readMore {
-  margin-top: 10px;
+  margin-top: 22px;
   text-align: center;
 }
 
+.divider {
+  border: none;
+  border-top: 1px solid var(--enb-border);
+  margin: 22px 0;
+}
+
 .footer {
-  overflow: hidden;
-  position: relative;
-  text-align: center;
-  padding-top: 10px;
-  margin-top: 15px;
+  text-align: left;
 }
 
 .author {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-family: var(--font-body);
   font-style: italic;
-  letter-spacing: 0.5px;
-  color: var(--enb-meta);
+  font-size: 14px;
+  color: var(--enb-heading);
 }
 
 .author:hover {
@@ -136,9 +132,12 @@
   text-transform: uppercase;
 }
 
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 640px) {
+  .media {
+    height: 260px;
+  }
+
   .title {
-    font-size: 26px;
-    line-height: 31px;
+    font-size: 28px;
   }
 }

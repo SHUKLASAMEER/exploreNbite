@@ -18,7 +18,7 @@ export default async function Home({ searchParams }) {
   const { posts, pagination, error } = await getPublicPosts({ page });
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
       <PostList
         posts={posts}
         error={error}

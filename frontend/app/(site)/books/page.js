@@ -18,7 +18,7 @@ export default async function BooksPage() {
   const { books, error } = await getPublicBooks();
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="page" />}>
       <PageHeader title="My Books" />
       {error ? (
         <StateMessage kind="error" title="Couldn't load books.">

@@ -23,7 +23,7 @@ export default async function SearchPage({ searchParams }) {
     : { posts: [], pagination: null, error: null };
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="utility" />}>
       <PageHeader title={query ? `Search results for “${query}”` : "Search"} />
       {!query ? (
         <StateMessage kind="empty" title="Enter a search term to find posts." />

@@ -3,6 +3,7 @@
   overflow: hidden;
 }
 
+/* ---------- Search widget ---------- */
 .searchForm {
   position: relative;
 }
@@ -35,89 +36,117 @@
   font-size: 15px;
 }
 
-.authorCard {
-  text-align: center;
-}
-
-.authorAvatar {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin: 0 auto 15px;
-  display: block;
-}
-
-.authorInitial {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  margin: 0 auto 15px;
+/* ---------- Recommended Post widget ---------- */
+.recPost {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+}
+
+.recPostImage {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: cover;
+  margin-bottom: 16px;
+}
+
+.recPostImagePlaceholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  margin-bottom: 16px;
   background: var(--enb-accent);
-  color: #ffffff;
-  font-size: 32px;
-  font-weight: bold;
-  text-transform: uppercase;
 }
 
-.authorName {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.authorBio {
+.recPostAuthor {
+  font-family: var(--font-body);
+  font-weight: 700;
   font-size: 13px;
-  line-height: 22px;
-  color: var(--enb-text);
-  margin-bottom: 12px;
-}
-
-.authorLink {
-  font-size: 12px;
-  font-weight: bold;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: var(--enb-accent);
-}
-
-.authorLink:hover {
-  color: var(--enb-accent-hover);
-}
-
-.awardCard {
-  text-align: center;
-}
-
-.awardImage {
-  width: 100%;
-  height: auto;
-  display: block;
+  color: var(--enb-heading);
   margin-bottom: 10px;
 }
 
-.awardTitle {
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--enb-text);
+.recPostTitle {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--enb-heading);
+  margin-bottom: 8px;
 }
 
-.awardLink {
-  display: block;
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+.recPost:hover .recPostTitle {
   color: var(--enb-accent);
 }
 
-.awardLink:hover {
-  color: var(--enb-accent-hover);
+.recPostExcerpt {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--enb-meta);
 }
 
+/* ---------- Recent Posts widget ---------- */
+.recentList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recentList li {
+  margin: 12px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.recentList a {
+  color: var(--enb-heading);
+}
+
+.recentList a:hover {
+  color: var(--enb-accent);
+}
+
+/* ---------- Badges widget ---------- */
+.badges {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 200px;
+  min-height: 90px;
+  border: 1px solid var(--enb-border);
+  border-radius: 8px;
+  background: var(--enb-tag-bg);
+  text-align: center;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--enb-text);
+  padding: 12px;
+}
+
+.badge:hover {
+  border-color: var(--enb-accent);
+  color: var(--enb-accent);
+}
+
+.badgeImage {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* ---------- Subscribe widget ---------- */
 .subscribeText {
   font-size: 13px;
   color: var(--enb-text);
@@ -152,29 +181,4 @@
 
 .subscribeError {
   color: #a94442;
-}
-
-.social {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-}
-
-.social a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--enb-border);
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  color: var(--enb-text);
-}
-
-.social a:hover {
-  border-color: var(--enb-accent);
-  color: var(--enb-accent);
 }

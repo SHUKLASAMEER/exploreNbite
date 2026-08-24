@@ -77,16 +77,21 @@ export function resolveMenuItemHref(item) {
 
 // Returns { posts, pagination, error }. `params` may include `page`,
 // `category` (a Category id — resolve a slug via getPublicCategoryBySlug()
-// first), `author` (an Author id), `search` (matches post title). Only
-// published posts are ever returned — GET /api/posts forces that
-// server-side (backend/src/controllers/post.controller.js#listPublic), so
-// there's no client-side filtering to get wrong here.
+// first), `author` (an Author id), `search` (matches post title), `limit`
+// (page size — the backend already accepts this for every list caller, see
+// postService.list()'s clampInt(query.limit, ...), just unused by public
+// callers until the sidebar's Recommended/Recent Posts widgets needed a
+// small fixed-size fetch instead of a full paginated page). Only published
+// posts are ever returned — GET /api/posts forces that server-side
+// (backend/src/controllers/post.controller.js#listPublic), so there's no
+// client-side filtering to get wrong here.
 export async function getPublicPosts(params = {}) {
   const qs = new URLSearchParams();
   if (params.page) qs.set("page", String(params.page));
   if (params.category) qs.set("category", String(params.category));
   if (params.author) qs.set("author", String(params.author));
   if (params.search) qs.set("search", params.search);
+  if (params.limit) qs.set("limit", String(params.limit));
   const query = qs.toString();
 
   try {

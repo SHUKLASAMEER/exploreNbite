@@ -1,0 +1,44 @@
+/* Matches reference/exploreNbite UI/contact.html's `.contact-form` — plain
+   bordered inputs, label above each field. */
+.form {
+  max-width: 560px;
+}
+
+.form label {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 8px;
+  margin-top: 20px;
+  color: var(--enb-text);
+}
+
+.form label:first-child {
+  margin-top: 0;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--enb-border);
+  padding: 12px 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: var(--enb-bg);
+  color: var(--enb-text);
+}
+
+.textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.submitWrap {
+  margin-top: 24px;
+}
+
+.formMessage {
+  font-size: 13px;
+  margin: 12px 0 0;
+  color: var(--enb-meta);
+}

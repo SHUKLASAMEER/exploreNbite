@@ -1,5 +1,5 @@
 .media {
-  aspect-ratio: 3 / 2;
+  height: 360px;
   overflow: hidden;
   margin-bottom: 25px;
   background: var(--enb-footer-bg);
@@ -12,8 +12,12 @@
   display: block;
 }
 
+/* Left-aligned, no centering — matches reference/exploreNbite UI/post.html,
+   whose <main> carries the same `.static-page`/`.page-title-block`
+   treatment as the generic CMS Page template (PageHeader.module.css),
+   unlike the centered PostCard header used in listings. */
 .header {
-  text-align: center;
+  text-align: left;
   margin-bottom: 25px;
 }
 
@@ -52,22 +56,139 @@
   margin: 0 6px;
 }
 
+/* Share row — reference/exploreNbite UI/post.html's `.share-row`. */
+.shareRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  margin: 30px 0;
+  font-size: 15px;
+}
+
+.shareLabel {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.shareRow a:hover {
+  color: var(--enb-accent);
+}
+
+/* Related posts — reference/exploreNbite UI/post.html's `.related-posts`. */
+.relatedPosts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 30px 0;
+}
+
+.relatedCard {
+  flex: 1;
+  min-width: 160px;
+}
+
+.relatedMedia {
+  display: block;
+  height: 120px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--enb-footer-bg);
+}
+
+.relatedMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.relatedTitle {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--enb-accent);
+  margin-bottom: 4px;
+}
+
+.relatedCard:hover .relatedTitle {
+  color: var(--enb-accent-hover);
+}
+
+.relatedDate {
+  font-size: 12px;
+  color: var(--enb-text);
+}
+
+/* Tag pills — reference/exploreNbite UI's `.tag-pill`. */
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 30px;
+  gap: 10px;
+  margin: 24px 0;
 }
 
 .tag {
   display: inline-block;
-  padding: 4px 13px;
-  font-size: 11px;
+  background: var(--enb-tag-bg);
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 3px;
+  color: var(--enb-text);
+}
+
+/* Bottom author row — reference/exploreNbite UI's `.author-row` (small
+   avatar, name, comment count) — distinct from the bigger `.authorBox`
+   below, which is the author-archive page's bio header (no mockup for
+   that page; kept as-is). */
+.postAuthorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  text-align: left;
+  margin-top: 15px;
+}
+
+.postAuthor {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--enb-heading);
+}
+
+.postAuthor:hover {
+  color: var(--enb-accent);
+}
+
+.postAuthorInitial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--enb-accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-weight: 600;
-  border: 1px solid var(--enb-border);
+}
+
+.postComments {
+  font-family: var(--font-heading);
+  font-style: italic;
+  font-size: 15px;
   color: var(--enb-meta);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--enb-border);
+  margin: 30px 0 0;
 }
 
 .authorBox {
@@ -123,6 +244,10 @@
 }
 
 @media screen and (max-width: 480px) {
+  .media {
+    height: 220px;
+  }
+
   .title {
     font-size: 28px;
     line-height: 33px;

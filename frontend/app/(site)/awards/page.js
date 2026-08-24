@@ -16,7 +16,7 @@ export default async function AwardsPage() {
   const { awards, error } = await getPublicAwards();
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="page" />}>
       <PageHeader title="Mentions, Awards & Accolades" />
       {error ? (
         <StateMessage kind="error" title="Couldn't load awards.">

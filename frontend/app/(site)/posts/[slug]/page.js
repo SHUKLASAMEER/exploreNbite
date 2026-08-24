@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import TwoColumnLayout from "@/components/public/TwoColumnLayout";
 import Sidebar from "@/components/public/Sidebar";
@@ -6,7 +7,7 @@ import ProseContent from "@/components/public/ProseContent";
 import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
-import { getPublicPostBySlug, getPublicComments } from "@/lib/publicApi";
+import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
 import { formatDate } from "@/lib/formatDate";
 import styles from "@/components/public/SinglePost.module.css";
 import commentStyles from "@/components/public/Comments.module.css";
@@ -16,6 +17,19 @@ export async function generateMetadata({ params }) {
   const { post } = await getPublicPostBySlug(slug);
   if (!post) return {};
   return { title: `${post.title} | Explore N Bite`, description: post.shortDescription ?? undefined };
+}
+
+// Absolute post URL for the share-row links below — Twitter/Facebook/
+// LinkedIn's share intents require a fully-qualified URL, and there's no
+// NEXT_PUBLIC_SITE_URL env var in this project to build one from, so it's
+// derived from the incoming request's own Host header instead (same
+// pattern serverApiFetch uses for the Cookie header).
+async function getAbsolutePostUrl(slug) {
+  const headerList = await headers();
+  const host = headerList.get("host");
+  if (!host) return `/posts/${slug}`;
+  const proto = headerList.get("x-forwarded-proto") ?? "https";
+  return `${proto}://${host}/posts/${slug}`;
 }
 
 export default async function SinglePostPage({ params }) {
@@ -28,7 +42,7 @@ export default async function SinglePostPage({ params }) {
 
   if (error || !post) {
     return (
-      <TwoColumnLayout sidebar={<Sidebar />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="post" />}>
         <StateMessage kind="error" title="Couldn't load this post.">
           {error}
         </StateMessage>
@@ -36,10 +50,20 @@ export default async function SinglePostPage({ params }) {
     );
   }
 
-  const { comments, error: commentsError } = await getPublicComments(post.id);
+  const [{ comments, error: commentsError }, postUrl, relatedPosts] = await Promise.all([
+    getPublicComments(post.id),
+    getAbsolutePostUrl(post.slug),
+    getRelatedPosts(post),
+  ]);
+
+  const shareLinks = [
+    { name: "Twitter", href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title)}` },
+    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}` },
+    { name: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}` },
+  ];
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="post" excludePostId={post.id} />}>
       <article>
         {post.featuredImageUrl ? (
           <div className={styles.media}>
@@ -67,6 +91,37 @@ export default async function SinglePostPage({ params }) {
 
         <ProseContent html={post.content} />
 
+        <div className={styles.shareRow}>
+          <span className={styles.shareLabel}>Share this post:</span>
+          {shareLinks.map((link, index) => (
+            <span key={link.name}>
+              {index > 0 ? " · " : null}
+              <a href={link.href} target="_blank" rel="noopener noreferrer">
+                on {link.name}
+              </a>
+            </span>
+          ))}
+        </div>
+
+        {relatedPosts.length > 0 ? (
+          <div className={styles.relatedPosts}>
+            {relatedPosts.map((related) => (
+              <Link key={related.id} href={`/posts/${related.slug}`} className={styles.relatedCard}>
+                {related.featuredImageUrl ? (
+                  <span className={styles.relatedMedia}>
+                    <img src={related.featuredImageUrl} alt="" />
+                  </span>
+                ) : null}
+                <div className={styles.relatedTitle}>{related.title}</div>
+                <div className={styles.relatedDate}>
+                  {formatDate(related.publishDate)}
+                  {related.category ? ` · In "${related.category.name}"` : ""}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
         {post.tags && post.tags.length > 0 ? (
           <div className={styles.tags}>
             {post.tags.map((tag) => (
@@ -78,16 +133,22 @@ export default async function SinglePostPage({ params }) {
         ) : null}
 
         {post.author ? (
-          <div className={styles.authorBox}>
-            <span className={styles.authorInitial} aria-hidden="true">
-              {post.author.name?.[0] ?? "?"}
-            </span>
-            <div>
-              <p className={styles.authorName}>
-                <Link href={`/authors/${post.author.id}`}>{post.author.name}</Link>
-              </p>
+          <>
+            <hr className={styles.divider} />
+            <div className={styles.postAuthorRow}>
+              <Link href={`/authors/${post.author.id}`} className={styles.postAuthor}>
+                <span className={styles.postAuthorInitial} aria-hidden="true">
+                  {post.author.name?.[0] ?? "?"}
+                </span>
+                By {post.author.name}
+              </Link>
+              {comments && comments.length > 0 ? (
+                <span className={styles.postComments}>
+                  {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
+                </span>
+              ) : null}
             </div>
-          </div>
+          </>
         ) : null}
 
         <section className={commentStyles.section}>
@@ -112,4 +173,13 @@ export default async function SinglePostPage({ params }) {
       </article>
     </TwoColumnLayout>
   );
+}
+
+// Related posts (reference/exploreNbite UI/post.html's `.related-posts`) —
+// the newest other posts in the same category, since there's no dedicated
+// "related posts" relation on the Post model.
+async function getRelatedPosts(post) {
+  if (!post.category) return [];
+  const { posts } = await getPublicPosts({ category: post.category.id, limit: 4 });
+  return (posts ?? []).filter((p) => p.id !== post.id).slice(0, 3);
 }

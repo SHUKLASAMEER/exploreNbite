@@ -49,14 +49,17 @@ export default function PostCard({ post }) {
       </div>
 
       {post.author ? (
-        <footer className={styles.footer}>
-          <Link href={`/authors/${post.author.id}`} className={styles.author}>
-            <span className={styles.authorInitial} aria-hidden="true">
-              {post.author.name?.[0] ?? "?"}
-            </span>
-            By {post.author.name}
-          </Link>
-        </footer>
+        <>
+          <hr className={styles.divider} />
+          <footer className={styles.footer}>
+            <Link href={`/authors/${post.author.id}`} className={styles.author}>
+              <span className={styles.authorInitial} aria-hidden="true">
+                {post.author.name?.[0] ?? "?"}
+              </span>
+              {post.author.name}
+            </Link>
+          </footer>
+        </>
       ) : null}
     </article>
   );

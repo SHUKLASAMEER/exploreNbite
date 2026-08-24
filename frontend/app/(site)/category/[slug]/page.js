@@ -27,7 +27,7 @@ export default async function CategoryPage({ params, searchParams }) {
 
   if (categoryError || !category) {
     return (
-      <TwoColumnLayout sidebar={<Sidebar />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="archive" />}>
         <StateMessage kind="error" title="Couldn't load this category.">
           {categoryError}
         </StateMessage>
@@ -38,7 +38,7 @@ export default async function CategoryPage({ params, searchParams }) {
   const { posts, pagination, error } = await getPublicPosts({ category: category.id, page });
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="archive" />}>
       <PageHeader title={category.name} description={category.description} />
       <PostList
         posts={posts}
