@@ -15,14 +15,14 @@
   --enb-heading: #030303;
   --enb-meta: #a1a1a1;
   --enb-border: #e8e8e8;
+  --enb-tag-bg: #f2f2f2;
   --enb-bg: #ffffff;
   --enb-footer-bg: #f6f6f6;
   --enb-footer-text: #333333;
-  --enb-footer-heading: #111111;
   --enb-footer-border: #e0dbdb;
   --enb-button-bg: #333333;
   --enb-content-width: 1160px;
-  --enb-sidebar-width: 307px;
+  --enb-sidebar-width: 340px;
   --font-heading: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-body: var(--font-open-sans), Arial, Helvetica, sans-serif;
 

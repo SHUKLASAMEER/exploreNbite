@@ -1,7 +1,8 @@
-/* Two button variants taken directly from the live site's CSS (Customizer
-   "Buttons" + `.read-more a` rules): outline (post-card read-more, ghost)
-   and solid (form submits, pagination, subscribe) which turns gold on
-   hover. */
+/* Two button variants — outline matches reference/exploreNbite UI/
+   style.css's `.btn-outline` exactly (gold border + gold text by default,
+   used for "Read More"); solid matches the live site's Customizer
+   "Buttons" rules (form submits, pagination, subscribe), darkening toward
+   gold on hover. */
 .button {
   display: inline-block;
   padding: 0 25px;
@@ -19,14 +20,14 @@
 
 .outline {
   composes: button;
-  border-color: var(--enb-heading);
-  color: var(--enb-heading);
+  border-color: var(--enb-accent);
+  color: var(--enb-accent);
   background: transparent;
 }
 
 .outline:hover {
-  border-color: var(--enb-accent);
-  color: var(--enb-accent);
+  border-color: var(--enb-accent-hover);
+  color: var(--enb-accent-hover);
 }
 
 .solid {

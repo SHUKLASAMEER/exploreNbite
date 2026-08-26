@@ -1,7 +1,8 @@
-/* Content container (max-width: 1160px) + main/sidebar split — taken from
-   the live site's .boxed-wrapper / .main-container / .sidebar-right rules.
-   Collapses to a single column below 980px (the live site's own
-   `col1-rsidebar` breakpoint), sidebar moving below the main content. */
+/* Content container (max-width: 1160px) + main/sidebar split — column
+   proportions match reference/exploreNbite UI/style.css's `.content-row`
+   exactly (main-col 760px implicit + sidebar-col 340px + 60px gap = 1160px
+   total). Collapses to a single column below 980px, sidebar moving below
+   the main content. */
 .container {
   max-width: var(--enb-content-width);
   margin: 0 auto;
@@ -13,7 +14,7 @@
 .columns {
   display: flex;
   align-items: flex-start;
-  gap: 37px;
+  gap: 60px;
 }
 
 .main {
