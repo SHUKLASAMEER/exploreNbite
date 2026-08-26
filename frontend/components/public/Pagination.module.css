@@ -1,39 +1,29 @@
-/* Numeric blog pagination — solid dark buttons that turn gold on hover,
-   current page rendered as a plain (non-link) gold-background span, taken
-   from the live site's `.blog-pagination.numeric` rules. */
+/* "Older Posts" / "Newer Posts" pagination — matches the live site's
+   `.blog-pagination.default` exactly: previous-page (Older Posts) floated
+   left, next-page (Newer Posts) floated right, uppercase semibold links,
+   no numbered pages, no visible border/background. */
 .wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin: 40px 0 10px;
-  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+  padding: 0 0 50px;
 }
 
-.link,
-.current {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  height: 40px;
-  padding: 0 6px;
+.wrap a {
+  font-weight: 600;
   font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--enb-heading);
 }
 
-.link {
-  color: #ffffff;
-  background: var(--enb-button-bg);
+.wrap a:hover {
+  color: var(--enb-accent);
 }
 
-.link:hover {
-  background: var(--enb-accent);
-  color: #ffffff;
+.previous {
+  float: left;
 }
 
-.current {
-  background: var(--enb-accent);
-  color: #ffffff;
+.next {
+  float: right;
 }

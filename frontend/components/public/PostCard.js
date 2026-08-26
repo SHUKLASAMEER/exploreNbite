@@ -27,10 +27,21 @@ export default function PostCard({ post }) {
       ) : null}
 
       <header className={styles.header}>
-        {post.category ? (
-          <Link href={`/category/${post.category.slug}`} className={styles.category}>
-            {post.category.name}
-          </Link>
+        {/* `categories` is the full set (primary + any extra WordPress-style
+            categories a post also belongs to, see backend/src/services/post.service.js#toPublicPost)
+            — falls back to the single `category` for any caller that hasn't
+            been updated to request the new field. Joined inline with ",  "
+            (comma + two nbsp) exactly like the live site's `.post-categories`
+            markup, rather than one per line. */}
+        {(post.categories ?? (post.category ? [post.category] : [])).length > 0 ? (
+          <div className={styles.category}>
+            {(post.categories ?? [post.category]).map((category, i) => (
+              <span key={category.id}>
+                {i > 0 ? <span aria-hidden="true">,{"  "}</span> : null}
+                <Link href={`/category/${category.slug}`}>{category.name}</Link>
+              </span>
+            ))}
+          </div>
         ) : null}
 
         <h2 className={styles.title}>
@@ -53,9 +64,13 @@ export default function PostCard({ post }) {
           <hr className={styles.divider} />
           <footer className={styles.footer}>
             <Link href={`/authors/${post.author.id}`} className={styles.author}>
-              <span className={styles.authorInitial} aria-hidden="true">
-                {post.author.name?.[0] ?? "?"}
-              </span>
+              {post.author.photoUrl ? (
+                <img className={styles.authorAvatar} src={post.author.photoUrl} alt="" aria-hidden="true" />
+              ) : (
+                <span className={styles.authorInitial} aria-hidden="true">
+                  {post.author.name?.[0] ?? "?"}
+                </span>
+              )}
               {post.author.name}
             </Link>
           </footer>

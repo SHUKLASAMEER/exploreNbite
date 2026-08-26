@@ -103,6 +103,15 @@ function parsePostInput(body, mode) {
     result.allowComments = true;
   }
 
+  if (has("sticky")) {
+    if (typeof input.sticky !== "boolean") {
+      throw new ValidationError("sticky must be true or false.");
+    }
+    result.sticky = input.sticky;
+  } else if (mode === "create") {
+    result.sticky = false;
+  }
+
   if (has("publishDate")) {
     const raw = input.publishDate;
     if (raw === null || raw === "") {
@@ -166,4 +175,42 @@ async function resolveTagIds(prisma, rawTags) {
   return tagIds;
 }
 
-module.exports = { parsePostInput, resolveTagIds, VALID_STATUSES };
+/**
+ * Takes the raw `categoryIds` field from a request body — an array of
+ * *additional* category ids a post also belongs to, beyond its required
+ * primary `categoryId` (see the post_categories schema note) — and resolves
+ * it to a deduped array of ids, verifying each one actually exists. Unlike
+ * resolveTagIds this never creates anything; categories are a fixed, flat
+ * list managed on their own admin screen.
+ */
+async function resolveCategoryIds(prisma, rawCategoryIds, primaryCategoryId) {
+  if (rawCategoryIds === undefined) return undefined;
+  if (!Array.isArray(rawCategoryIds)) {
+    throw new ValidationError("categoryIds must be an array of category ids.");
+  }
+
+  const ids = [];
+  const seen = new Set();
+  for (const value of rawCategoryIds) {
+    const id = Number(value);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new ValidationError("Each additional category id must be a positive integer.");
+    }
+    // The primary category is already implied — skip it here so it's never
+    // duplicated into post_categories alongside categoryId.
+    if (id === primaryCategoryId || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+
+  if (ids.length > 0) {
+    const found = await prisma.category.findMany({ where: { id: { in: ids } }, select: { id: true } });
+    if (found.length !== ids.length) {
+      throw new ValidationError("One or more additional categories do not exist.");
+    }
+  }
+
+  return ids;
+}
+
+module.exports = { parsePostInput, resolveTagIds, resolveCategoryIds, VALID_STATUSES };

@@ -8,5 +8,6 @@ const subscriberController = require("../controllers/subscriber.controller");
 const router = express.Router();
 
 router.post("/", subscriberController.subscribePublic);
+router.get("/count", subscriberController.countPublic);
 
 module.exports = router;

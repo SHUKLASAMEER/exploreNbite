@@ -36,53 +36,71 @@
   font-size: 15px;
 }
 
-/* ---------- Recommended Post widget ---------- */
-.recPost {
+/* ---------- Recommended Post widget ----------
+   Matches the live site's `.widget_authors` widget exactly: author avatar
+   + name, then a short list of their most recent post titles (no excerpt,
+   no per-post thumbnail — that's the old, incorrect assumption this
+   replaces). */
+.recAuthor {
   display: flex;
   flex-direction: column;
 }
 
-.recPostImage {
-  width: 56px;
-  height: 56px;
-  border-radius: 4px;
-  object-fit: cover;
-  margin-bottom: 16px;
-}
-
-.recPostImagePlaceholder {
-  width: 56px;
-  height: 56px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-  background: var(--enb-accent);
-}
-
-.recPostAuthor {
+.recAuthorLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
   font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-size: 14px;
   color: var(--enb-heading);
-  margin-bottom: 10px;
 }
 
-.recPostTitle {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--enb-heading);
-  margin-bottom: 8px;
-}
-
-.recPost:hover .recPostTitle {
+.recAuthorLink:hover {
   color: var(--enb-accent);
 }
 
-.recPostExcerpt {
+.recAuthorAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.recAuthorInitial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--enb-accent);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  flex: none;
+}
+
+.recPostList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recPostList li {
+  margin: 10px 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--enb-meta);
+}
+
+.recPostList a {
+  color: var(--enb-heading);
+}
+
+.recPostList a:hover {
+  color: var(--enb-accent);
 }
 
 /* ---------- Recent Posts widget ---------- */
@@ -106,44 +124,32 @@
   color: var(--enb-accent);
 }
 
-/* ---------- Badges widget ---------- */
-.badges {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-}
-
-.badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 200px;
-  min-height: 90px;
-  border: 1px solid var(--enb-border);
-  border-radius: 8px;
-  background: var(--enb-tag-bg);
+/* ---------- Social widgets (Facebook / Twitter) ----------
+   The live site embeds a real Facebook Page Plugin / Twitter timeline here
+   (external SDKs, not reproduced — see Sidebar.js's own notes). This is the
+   honest stand-in: the same real heading, and one link out to the real
+   profile URL instead of a fake feed. */
+.socialLink {
   text-align: center;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  color: var(--enb-text);
-  padding: 12px;
 }
 
-.badge:hover {
-  border-color: var(--enb-accent);
-  color: var(--enb-accent);
+/* ---------- Media badge widgets (Award photo / Tripoto / IndiBlogger) ----------
+   Each is a single image, optionally linked, optionally headed — matches
+   the live site's `#media_image-2` / `#custom_html-3` / `#custom_html-4`
+   widgets. No object-fit crop: every image renders at its real aspect
+   ratio (width/height passed in from the live site's own dimensions),
+   centered, never stretched. */
+.mediaBadgeImage {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
-.badgeImage {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
+.mediaBadgeLink {
+  display: block;
+  text-align: center;
 }
 
 /* ---------- Subscribe widget ---------- */
@@ -181,4 +187,11 @@
 
 .subscribeError {
   color: #a94442;
+}
+
+.subscribeCount {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--enb-meta);
+  text-align: center;
 }

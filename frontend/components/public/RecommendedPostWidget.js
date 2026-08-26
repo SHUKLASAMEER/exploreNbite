@@ -2,28 +2,39 @@ import Link from "next/link";
 import WidgetTitle from "./WidgetTitle";
 import styles from "./Sidebar.module.css";
 
-// "Recommended Post" sidebar card (reference/exploreNbite UI/index.html's
-// `.rec-post` widget: small avatar, author name, post title, muted
-// excerpt). Backed by the most recent published post (see Sidebar.js) since
-// there's no "featured/pinned post" flag on the Post model — a genuine
-// content-modeling gap, not something worth a schema change for one sidebar
-// widget.
-export default function RecommendedPostWidget({ post }) {
-  if (!post) return null;
+// "Recommended post" sidebar widget — matches the live site's actual
+// `.widget_authors` widget exactly (verified against the live HTML, not the
+// old assumption that this was a single "featured post" card): the site
+// author's avatar + name, then a short list of their most recent posts
+// (2 on the live site) as plain title links — no excerpt, no per-post
+// image.
+export default function RecommendedPostWidget({ author, posts }) {
+  if (!author || !posts || posts.length === 0) return null;
 
   return (
     <div className={styles.widget}>
-      <WidgetTitle>Recommended Post</WidgetTitle>
-      <Link href={`/posts/${post.slug}`} className={styles.recPost}>
-        {post.featuredImageUrl ? (
-          <img src={post.featuredImageUrl} alt="" className={styles.recPostImage} />
-        ) : (
-          <span className={styles.recPostImagePlaceholder} aria-hidden="true" />
-        )}
-        {post.author ? <span className={styles.recPostAuthor}>{post.author.name}</span> : null}
-        <span className={styles.recPostTitle}>{post.title}</span>
-        {post.shortDescription ? <span className={styles.recPostExcerpt}>{post.shortDescription}</span> : null}
-      </Link>
+      <WidgetTitle>Recommended post</WidgetTitle>
+      <div className={styles.recAuthor}>
+        <Link href={`/authors/${author.id}`} className={styles.recAuthorLink}>
+          {author.photoUrl ? (
+            <img src={author.photoUrl} alt="" className={styles.recAuthorAvatar} />
+          ) : (
+            <span className={styles.recAuthorInitial} aria-hidden="true">
+              {author.name?.[0] ?? "?"}
+            </span>
+          )}
+          <strong>{author.name}</strong>
+        </Link>
+        <ul className={styles.recPostList}>
+          {posts.map((post) => (
+            <li key={post.id}>
+              <Link href={`/posts/${post.slug}`} title={post.title}>
+                {post.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

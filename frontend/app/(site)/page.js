@@ -15,7 +15,10 @@ export const metadata = {
 export default async function Home({ searchParams }) {
   const params = await searchParams;
   const page = Number(params?.page) || 1;
-  const { posts, pagination, error } = await getPublicPosts({ page });
+  // limit: 10 + sticky: true reproduces the live site's actual front page —
+  // 10 posts/page, plus every Sticky post pinned above the rest on page 1
+  // only (see lib/publicApi.js and post.service.js#list).
+  const { posts, pagination, error } = await getPublicPosts({ page, limit: 10, sticky: true });
 
   return (
     <TwoColumnLayout sidebar={<Sidebar layout="home" />}>

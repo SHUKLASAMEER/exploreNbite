@@ -37,12 +37,14 @@ const emptyForm = {
   title: "",
   slug: "",
   categoryId: "",
+  categoryIds: [],
   authorId: "",
   featuredImageUrl: "",
   shortDescription: "",
   content: "",
   status: "draft",
   allowComments: true,
+  sticky: false,
   publishDate: toDatetimeLocalValue(new Date().toISOString()),
   tags: [],
 };
@@ -105,12 +107,18 @@ export default function PostForm({ mode, postId }) {
             title: post.title,
             slug: post.slug,
             categoryId: String(post.category.id),
+            // `categories` is the full set (primary + extra); the extra
+            // ones are whatever's left after excluding the primary.
+            categoryIds: (post.categories ?? [])
+              .filter((c) => c.id !== post.category.id)
+              .map((c) => String(c.id)),
             authorId: String(post.author.id),
             featuredImageUrl: post.featuredImageUrl ?? "",
             shortDescription: post.shortDescription ?? "",
             content: post.content,
             status: post.status,
             allowComments: post.allowComments,
+            sticky: post.sticky ?? false,
             publishDate: toDatetimeLocalValue(post.publishDate),
             tags: post.tags.map((t) => t.name),
           });
@@ -166,12 +174,14 @@ export default function PostForm({ mode, postId }) {
       title: form.title,
       slug: form.slug,
       categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+      categoryIds: form.categoryIds.map(Number),
       authorId: form.authorId ? Number(form.authorId) : undefined,
       featuredImageUrl: form.featuredImageUrl,
       shortDescription: form.shortDescription,
       content: form.content,
       status: form.status,
       allowComments: form.allowComments,
+      sticky: form.sticky,
       publishDate: form.publishDate ? new Date(form.publishDate).toISOString() : undefined,
       tags: form.tags,
     };
@@ -286,6 +296,34 @@ export default function PostForm({ mode, postId }) {
             ))}
           </select>
         </label>
+
+        <div style={labelStyle}>
+          Additional categories{" "}
+          <span style={{ color: "#888", fontWeight: "normal" }}>
+            (optional — a post can also show up under other category listings besides its primary one above)
+          </span>
+          <div style={{ display: "flex", gap: "0.9rem", flexWrap: "wrap" }}>
+            {categories
+              .filter((c) => String(c.id) !== form.categoryId)
+              .map((c) => (
+                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.9rem", fontWeight: "normal" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.categoryIds.includes(String(c.id))}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        categoryIds: e.target.checked
+                          ? [...prev.categoryIds, String(c.id)]
+                          : prev.categoryIds.filter((id) => id !== String(c.id)),
+                      }))
+                    }
+                  />
+                  {c.name}
+                </label>
+              ))}
+          </div>
+        </div>
 
         <label style={labelStyle}>
           Author
@@ -416,6 +454,16 @@ export default function PostForm({ mode, postId }) {
             onChange={(e) => setForm((prev) => ({ ...prev, allowComments: e.target.checked }))}
           />
           Allow comments
+        </label>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+          <input
+            type="checkbox"
+            checked={form.sticky}
+            onChange={(e) => setForm((prev) => ({ ...prev, sticky: e.target.checked }))}
+          />
+          Sticky{" "}
+          <span style={{ color: "#888" }}>(pinned above other posts on the homepage feed, newest-sticky-first)</span>
         </label>
       </section>
 

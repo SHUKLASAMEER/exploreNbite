@@ -16,9 +16,12 @@ async function parseJsonSafe(res) {
 
 // "Subscribe to Blog via Email" — the live site's Jetpack subscription
 // widget, reimplemented against our own existing public POST /api/subscribers
-// endpoint (backend/src/routes/publicSubscriber.routes.js, built in an
-// earlier phase — nothing new added here).
-export default function SubscribeWidget() {
+// endpoint (backend/src/routes/publicSubscriber.routes.js). Copy text and
+// placeholder below are verbatim from the live widget's own markup; `count`
+// (GET /api/subscribers/count) is this project's own real active-subscriber
+// count, not live's — showing our own real number is the honest match for
+// "Join N other subscribers," not copying live's unrelated figure.
+export default function SubscribeWidget({ count }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
@@ -54,12 +57,14 @@ export default function SubscribeWidget() {
   return (
     <div className={styles.widget}>
       <WidgetTitle>Subscribe to Blog via Email</WidgetTitle>
-      <p className={styles.subscribeText}>Get new posts delivered straight to your inbox.</p>
+      <p className={styles.subscribeText}>
+        Enter your email address to subscribe to this blog and receive notifications of new posts by email.
+      </p>
       <form onSubmit={handleSubmit} className={styles.subscribeForm}>
         <input
           type="email"
           required
-          placeholder="Your email address"
+          placeholder="Email Address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className={styles.subscribeInput}
@@ -77,6 +82,9 @@ export default function SubscribeWidget() {
           </p>
         ) : null}
       </form>
+      {typeof count === "number" && count > 0 ? (
+        <p className={styles.subscribeCount}>Join {count} other subscriber{count === 1 ? "" : "s"}</p>
+      ) : null}
     </div>
   );
 }

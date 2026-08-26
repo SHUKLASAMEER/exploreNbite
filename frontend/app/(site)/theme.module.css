@@ -22,7 +22,13 @@
   --enb-footer-border: #e0dbdb;
   --enb-button-bg: #333333;
   --enb-content-width: 1160px;
-  --enb-sidebar-width: 340px;
+  /* Live site: `.sidebar-right { width: 307px; padding-left: 37px; }` +
+     `.main-container { width: calc(100% - 307px); }` — the whole 307px box
+     is the sidebar column, and the 37px gutter between it and the main
+     column lives inside the sidebar's own left padding rather than as a
+     flex gap (see TwoColumnLayout.module.css). */
+  --enb-sidebar-width: 307px;
+  --enb-sidebar-gutter: 37px;
   --font-heading: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-body: var(--font-open-sans), Arial, Helvetica, sans-serif;
 

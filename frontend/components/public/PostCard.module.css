@@ -1,26 +1,30 @@
-/* Single blog-grid post card — matches reference/exploreNbite UI/
-   style.css's `.post-card` exactly: full-width image, centered
-   category/title/date, left-aligned excerpt with a drop-cap first letter,
-   centered outline "Read More" button, a divider, then the author row. */
+/* Single blog-grid post card — matches the live site's Ashe theme
+   (`.blog-post` / `.post-media` / `.post-header` / `.post-content` /
+   `.read-more` / `.post-footer` in wp-content/themes/ashe/style.css)
+   exactly: natural-ratio image, centered category/title/date, justified
+   excerpt, centered outline "Read More" button, a divider, then the author
+   row. No drop-cap — the live theme doesn't have one. */
 .card {
   margin-bottom: 60px;
   text-align: center;
 }
 
+/* Matches the live site's `.post-media` exactly: no fixed box, no crop. Each
+   post's featured image renders at its own natural aspect ratio, capped to
+   the column width, and centered — a tall portrait photo and a square one
+   end up different heights, same as on explorenbite.com. */
 .media {
   display: block;
-  width: 100%;
-  height: 420px;
+  position: relative;
   margin-bottom: 22px;
-  overflow: hidden;
-  background: var(--enb-footer-bg);
 }
 
 .media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
 .header {
@@ -35,17 +39,21 @@
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
+}
+
+.category a {
   color: var(--enb-accent);
 }
 
-.category:hover {
+.category a:hover {
   color: var(--enb-accent-hover);
 }
 
 .title {
-  font-size: 38px;
-  line-height: 1.2;
-  margin: 0 0 12px;
+  font-size: 40px;
+  line-height: 44px;
+  letter-spacing: 0.5px;
+  margin: 0 0 13px;
 }
 
 .title a {
@@ -66,20 +74,11 @@
 }
 
 .excerpt {
-  text-align: left;
+  text-align: justify;
   font-size: 15px;
   line-height: 1.7;
   color: var(--enb-text);
   margin-bottom: 0;
-}
-
-.excerpt::first-letter {
-  font-family: var(--font-heading);
-  font-size: 68px;
-  line-height: 0.8;
-  float: left;
-  padding-right: 10px;
-  padding-top: 8px;
 }
 
 .readMore {
@@ -133,11 +132,8 @@
 }
 
 @media screen and (max-width: 640px) {
-  .media {
-    height: 260px;
-  }
-
   .title {
-    font-size: 28px;
+    font-size: 33px;
+    line-height: 38px;
   }
 }

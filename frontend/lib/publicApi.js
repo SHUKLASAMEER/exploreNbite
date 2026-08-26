@@ -92,6 +92,12 @@ export async function getPublicPosts(params = {}) {
   if (params.author) qs.set("author", String(params.author));
   if (params.search) qs.set("search", params.search);
   if (params.limit) qs.set("limit", String(params.limit));
+  // Opts into the live site's front-page-only "sticky posts pinned to page
+  // 1" pagination behavior — see backend/src/services/post.service.js#list.
+  // Only the home page passes this; everything else (category archives,
+  // the sidebar's small Recommended/Recent Posts fetches) leaves it off,
+  // matching what the live site itself does.
+  if (params.sticky) qs.set("sticky", "1");
   const query = qs.toString();
 
   try {
@@ -138,6 +144,22 @@ export async function getPublicComments(postId) {
     return { comments: data?.comments ?? [], error: null };
   } catch {
     return { comments: null, error: "Failed to load comments." };
+  }
+}
+
+// Returns { count, error }. Backs the sidebar Subscribe widget's "Join N
+// other subscribers" line (live site: Jetpack's own subscription widget
+// shows the same thing) — real active-subscriber count, no placeholder.
+export async function getPublicSubscriberCount() {
+  try {
+    const res = await serverApiFetch("/api/subscribers/count");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { count: null, error: data?.error?.message ?? "Failed to load subscriber count." };
+    }
+    return { count: data?.count ?? 0, error: null };
+  } catch {
+    return { count: null, error: "Failed to load subscriber count." };
   }
 }
 

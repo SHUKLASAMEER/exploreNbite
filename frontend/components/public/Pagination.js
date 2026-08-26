@@ -5,37 +5,31 @@ import styles from "./Pagination.module.css";
 // URL shape (e.g. "/?page=2" vs "/category/must-visit?page=2") without this
 // component knowing about routes. Renders nothing for a single-page result
 // set — no pagination controls needed when there's nothing to paginate.
+//
+// Matches the live site's `.blog-pagination.default` exactly — a plain
+// "← Older Posts" / "Newer Posts →" pair (previous-page floated left,
+// next-page floated right), not numbered page links; the live theme never
+// renders numbered pagination on the blog/category archives, only this.
 export default function Pagination({ page, totalPages, buildHref }) {
   if (!totalPages || totalPages <= 1) {
     return null;
   }
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-
   return (
     <nav className={styles.wrap} aria-label="Pagination">
-      {page > 1 ? (
-        <Link href={buildHref(page - 1)} className={styles.link} aria-label="Previous page">
-          Prev
-        </Link>
-      ) : null}
-
-      {pages.map((p) =>
-        p === page ? (
-          <span key={p} className={styles.current} aria-current="page">
-            {p}
-          </span>
-        ) : (
-          <Link key={p} href={buildHref(p)} className={styles.link}>
-            {p}
-          </Link>
-        )
-      )}
-
       {page < totalPages ? (
-        <Link href={buildHref(page + 1)} className={styles.link} aria-label="Next page">
-          Next
-        </Link>
+        <div className={styles.previous}>
+          <Link href={buildHref(page + 1)}>
+            <span aria-hidden="true">←</span> Older Posts
+          </Link>
+        </div>
+      ) : null}
+      {page > 1 ? (
+        <div className={styles.next}>
+          <Link href={buildHref(page - 1)}>
+            Newer Posts <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       ) : null}
     </nav>
   );

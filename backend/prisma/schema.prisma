@@ -2,8 +2,18 @@
 // Source of truth: Phase 1.5 Decision & Architecture Lock Report, Section 4.
 // Approved decisions encoded here:
 //  - Categories are flat (no parent_id)
-//  - A post has exactly one category (required FK, not many-to-many)
+//  - A post has exactly one *primary* category (required FK, not many-to-many)
 //  - Tags are many-to-many via post_tags
+//  - post_categories (added: WP-fidelity sync, see /category/[slug] brief) is
+//    an *additive* many-to-many extension, not a replacement of the above —
+//    it holds only the extra categories a post also belongs to on the live
+//    WordPress site (e.g. a post primarily filed under "must-visit" that
+//    WordPress also tags "home"). categoryId/category stays the single
+//    required primary category everywhere else in the app (admin list
+//    column, single-select edit form, etc.); only the public category-archive
+//    listing query also matches against post_categories, so a page like
+//    /category/home/ can show every post WordPress files there without
+//    changing what "the" category of a post means anywhere else.
 //  - Comments are flat (no parent_comment_id / no self-relation)
 //  - Menu items are flat (no parent_id) and support page / category / custom_url
 //  - No related_posts table — related posts are computed at query time
@@ -64,8 +74,9 @@ model Category {
   sortOrder   Int      @default(0) @map("sort_order")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  posts     Post[]
-  menuItems MenuItem[]
+  posts           Post[]
+  menuItems       MenuItem[]
+  additionalPosts PostCategory[]
 
   @@map("categories")
 }
@@ -100,19 +111,41 @@ model Post {
   content          String     @db.LongText
   status           PostStatus @default(draft)
   allowComments    Boolean    @default(true) @map("allow_comments")
+  // WordPress "Sticky Post" flag — mirrors the live site's front-page
+  // behavior exactly (see post.service.js#list): only the "/" all-posts
+  // feed pins sticky posts above the rest (newest-sticky-first, then the
+  // remaining posts newest-first); category archives ignore this and stay
+  // plain date-desc, matching what the live site actually does.
+  sticky           Boolean    @default(false)
   publishDate      DateTime   @default(now()) @map("publish_date")
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
-  category Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  author   Author    @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  tags     PostTag[]
-  comments Comment[]
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author     Author         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  tags       PostTag[]
+  comments   Comment[]
+  categories PostCategory[]
 
   @@index([categoryId])
   @@index([authorId])
   @@index([status, publishDate])
   @@map("posts")
+}
+
+// Additive extra-category links — see the schema-header note above. A row
+// here means "this post also shows up under this category," on top of its
+// required primary categoryId.
+model PostCategory {
+  postId     Int @map("post_id")
+  categoryId Int @map("category_id")
+
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
+  @@map("post_categories")
 }
 
 model PostTag {

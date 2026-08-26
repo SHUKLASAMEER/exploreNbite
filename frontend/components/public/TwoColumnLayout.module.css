@@ -1,8 +1,9 @@
-/* Content container (max-width: 1160px) + main/sidebar split — column
-   proportions match reference/exploreNbite UI/style.css's `.content-row`
-   exactly (main-col 760px implicit + sidebar-col 340px + 60px gap = 1160px
-   total). Collapses to a single column below 980px, sidebar moving below
-   the main content. */
+/* Content container (max-width: 1160px, 40px side padding) + main/sidebar
+   split — matches the live site's `.boxed-wrapper` / `.main-container` /
+   `.sidebar-right` exactly: sidebar is a 307px box, and the gutter between
+   it and the main column is the sidebar's own 37px left padding (not a flex
+   gap), so main content actually gets the full remaining width. Collapses
+   to a single column below 980px, sidebar moving below the main content. */
 .container {
   max-width: var(--enb-content-width);
   margin: 0 auto;
@@ -14,7 +15,6 @@
 .columns {
   display: flex;
   align-items: flex-start;
-  gap: 60px;
 }
 
 .main {
@@ -25,6 +25,8 @@
 .sidebar {
   flex: 0 0 var(--enb-sidebar-width);
   width: var(--enb-sidebar-width);
+  padding-left: var(--enb-sidebar-gutter);
+  box-sizing: border-box;
 }
 
 @media screen and (max-width: 980px) {
@@ -40,6 +42,7 @@
     width: 100%;
     max-width: 420px;
     margin: 0 auto;
+    padding-left: 0;
     flex: none;
   }
 }

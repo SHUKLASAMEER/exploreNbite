@@ -49,6 +49,14 @@ async function subscribe(body) {
   });
 }
 
+// Public — active-subscriber count only, for the sidebar's "Subscribe to
+// Blog via Email" widget (matches the live site's own Jetpack widget, which
+// shows "Join N other subscribers" beneath the form). No email addresses or
+// any other subscriber detail leak through this — just a count.
+async function countActive() {
+  return prisma.subscriber.count({ where: { status: "active" } });
+}
+
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
@@ -103,4 +111,4 @@ async function remove(rawId) {
   await prisma.subscriber.delete({ where: { id } });
 }
 
-module.exports = { subscribe, list, getById, remove };
+module.exports = { subscribe, countActive, list, getById, remove };
