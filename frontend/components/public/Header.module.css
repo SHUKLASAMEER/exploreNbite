@@ -14,12 +14,18 @@
    line" look without assuming a fixed split. */
 .header {
   background: var(--enb-bg);
-  /* Compact utility bar: padding-block (8px + 8px) + logo height (34px) =
+  /* Compact utility bar: padding-block (2px + 2px) + logo height (46px) =
      50px total — the logo is the tallest child, so it alone sets the bar's
      content height; the 18px social icons just center within that via
-     .topBar's align-items. Keep these three numbers in sync if either
-     changes. */
-  --header-logo-height: 34px;
+     .topBar's align-items. Logo height is deliberately close to the bar's
+     full 50px (not an arbitrary number): app/icon.jpeg's own artwork only
+     fills ~76% of its canvas height (trimmed the actual ink and measured
+     it — the rest is real white pixels baked into the JPEG, not a CSS gap),
+     so this is the tightest padding that still leaves the bar looking
+     intentional rather than clipped; it can't be tightened further without
+     either cropping the source image (not allowed) or exceeding the 50px
+     bar. Keep these three numbers in sync if either changes. */
+  --header-logo-height: 46px;
 }
 
 /* --- Top bar --- */
@@ -28,7 +34,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 8px 40px;
+  padding: 2px 40px;
   background: var(--enb-bg);
 }
 
@@ -155,11 +161,13 @@
 
 @media (max-width: 980px) {
   .header {
-    --header-logo-height: 30px;
+    /* Same fix, same 42px total (2px + 38px + 2px) — see the desktop rule's
+       comment for why the logo can't visually fill 100% of the bar. */
+    --header-logo-height: 38px;
   }
 
   .topBar {
-    padding: 6px 20px;
+    padding: 2px 20px;
   }
 
   .hero {
