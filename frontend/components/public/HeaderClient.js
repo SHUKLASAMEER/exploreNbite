@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Logo from "@/components/Logo";
+import SocialIcon from "./SocialIcon";
 import styles from "./Header.module.css";
 
 // Client half of the public Header: the async data fetch lives in the
@@ -11,11 +13,12 @@ import styles from "./Header.module.css";
 // stay Server Components, so this is the one place pathname-based UI can
 // live).
 //
-// Structure follows the reference mockups (reference/exploreNbite UI/
-// index.html): a full-bleed gradient hero carrying the site title + tagline
-// + social icons, and a separate nav bar underneath — not the previous
-// compact three-tier header. The nav has no JS-driven mobile toggle: like
-// the mockup, it's a plain flex-wrap row that reflows to more lines on
+// Structure: a white top bar (logo left, social icons right), a full-bleed
+// photo hero carrying the site title + tagline, and a separate nav bar
+// underneath — matches the live site's actual header (verified against a
+// live screenshot + explorenbite.com's own header/hero markup), not the
+// earlier gradient-hero version this replaces. The nav has no JS-driven
+// mobile toggle: it's a plain flex-wrap row that reflows to more lines on
 // narrow viewports, so it needs no client state of its own beyond the
 // active-link check.
 function isAbsoluteUrl(href) {
@@ -50,12 +53,16 @@ function NavLink({ item, isActive }) {
   );
 }
 
-export default function HeaderClient({ siteTitle, tagline, navItems, navError, socialLinks }) {
+export default function HeaderClient({ siteTitle, tagline, heroImageUrl, navItems, navError, socialLinks }) {
   const pathname = usePathname();
 
   return (
     <header className={styles.header}>
-      <div className={styles.hero}>
+      <div className={styles.topBar}>
+        <Link href="/" className={styles.logoLink} aria-label={siteTitle}>
+          <Logo priority style={{ height: "var(--header-logo-height)", width: "auto" }} />
+        </Link>
+
         {socialLinks && socialLinks.length > 0 ? (
           <div className={styles.social}>
             {socialLinks.map((link) => (
@@ -67,12 +74,14 @@ export default function HeaderClient({ siteTitle, tagline, navItems, navError, s
                 aria-label={link.name}
                 className={styles.socialLink}
               >
-                {link.label}
+                <SocialIcon name={link.name} />
               </a>
             ))}
           </div>
         ) : null}
+      </div>
 
+      <div className={styles.hero} style={heroImageUrl ? { backgroundImage: `url(${heroImageUrl})` } : undefined}>
         <Link href="/" className={styles.siteTitle}>
           {siteTitle}
         </Link>

@@ -16,6 +16,14 @@ import HeaderClient from "./HeaderClient";
 // reference mockups use, not admin-editable content.
 const TAGLINE = "Travel and explore off-beat destinations";
 
+// Settings has no hero-image field either (same reasoning as TAGLINE above —
+// this is fixed brand content, not admin-editable CMS data, so adding a
+// schema column for one hardcoded image isn't warranted). This is the real
+// photo the live site itself uses for its hero (explorenbite.com's own
+// `.entry-header { background-image: url(...) }`, verified against the
+// live HTML/CSS) — not a substitute or generated image.
+const HERO_IMAGE_URL = "https://www.explorenbite.com/wp-content/uploads/2024/03/cropped-bhadkeshwar-mahadev.jpg";
+
 export default async function Header() {
   const [{ settings }, { menuItems, error: menuError }] = await Promise.all([
     getPublicSettings(),
@@ -30,6 +38,7 @@ export default async function Header() {
     <HeaderClient
       siteTitle={settings?.siteTitle ?? "Explore N Bite"}
       tagline={TAGLINE}
+      heroImageUrl={HERO_IMAGE_URL}
       navItems={navItems}
       navError={menuError}
       socialLinks={buildSocialLinks(settings)}
