@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, Check, X, ImageOff } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "0.75rem",
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.5rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import SearchInput from "@/components/admin/ui/SearchInput";
+import Pagination from "@/components/admin/ui/Pagination";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./MediaManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -30,8 +30,67 @@ function formatDate(iso) {
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+// One media library tile — its own edit-in-place state (alt text) lives
+// here, scoped to this card only.
+function MediaCard({ item, isEditing, editValue, editSaving, editError, onEditValueChange, onStartEdit, onSaveEdit, onCancelEdit, onDelete }) {
+  return (
+    <div className={styles.card}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- served from our own backend/uploads, not a project asset next/image can optimize across origins */}
+      <img
+        src={item.fileUrl}
+        alt={item.altText ?? ""}
+        className={styles.thumb}
+        onError={(e) => {
+          e.currentTarget.style.opacity = "0.25";
+        }}
+      />
+
+      <div className={styles.fileName}>{item.fileName}</div>
+      <div className={styles.meta}>
+        {formatDate(item.createdAt)}
+        {item.uploader ? ` · ${item.uploader.name}` : ""}
+      </div>
+
+      {isEditing ? (
+        <div className={styles.editRow}>
+          <input
+            className={styles.editInput}
+            type="text"
+            placeholder="Alt text"
+            value={editValue}
+            onChange={(e) => onEditValueChange(e.target.value)}
+            autoFocus
+          />
+          {editError ? <p className={styles.editError}>{editError}</p> : null}
+          <div className={styles.cardActions}>
+            <Button variant="primary" size="sm" icon={Check} onClick={onSaveEdit} disabled={editSaving}>
+              {editSaving ? "Saving…" : "Save"}
+            </Button>
+            <Button variant="ghost" size="sm" icon={X} onClick={onCancelEdit} disabled={editSaving}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={item.altText ? styles.altText : styles.altTextEmpty}>{item.altText || "No alt text"}</div>
+          <div className={styles.cardActions}>
+            <Button variant="ghost" size="sm" icon={Pencil} onClick={onStartEdit}>
+              Edit
+            </Button>
+            <Button variant="ghost" size="sm" icon={Trash2} onClick={onDelete}>
+              Delete
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function MediaManager() {
   const router = useRouter();
+  const showToast = useToast();
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -41,7 +100,6 @@ export default function MediaManager() {
   const [media, setMedia] = useState(null); // null = loading
   const [pagination, setPagination] = useState({ page: 1, limit, total: 0, totalPages: 0 });
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [editingId, setEditingId] = useState(null);
   const [editValue, setEditValue] = useState("");
@@ -94,7 +152,6 @@ export default function MediaManager() {
     setEditingId(item.id);
     setEditValue(item.altText ?? "");
     setEditError("");
-    setSuccessMessage("");
   }
 
   function cancelEdit() {
@@ -119,7 +176,7 @@ export default function MediaManager() {
         return;
       }
 
-      setSuccessMessage("Alt text updated.");
+      showToast("Alt text updated.");
       setEditingId(null);
       setEditSaving(false);
       await loadMedia();
@@ -154,7 +211,7 @@ export default function MediaManager() {
         return;
       }
 
-      setSuccessMessage(`Deleted "${deleteTarget.fileName}".`);
+      showToast(`Deleted "${deleteTarget.fileName}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadMedia();
@@ -165,170 +222,70 @@ export default function MediaManager() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>
-          Media{" "}
-          {media !== null ? (
-            <span style={{ color: "#888", fontWeight: "normal", fontSize: "1rem" }}>({pagination.total})</span>
-          ) : null}
-        </h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/media/new")}>
-          + Upload Image
-        </button>
+    <div>
+      <PageHeader
+        title="Media"
+        description={media !== null ? `${pagination.total} image${pagination.total === 1 ? "" : "s"} in the library.` : "Uploaded images library."}
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/media/new")}>
+            Upload Image
+          </Button>
+        }
+      />
+
+      <div className={styles.toolbar}>
+        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Search by filename…" />
       </div>
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
       {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
-      ) : null}
-
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          style={{ ...inputStyle, minWidth: "220px" }}
-          type="text"
-          placeholder="Search by filename…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-      </div>
-
-      {media === null ? (
-        <p>Loading media…</p>
+        <ErrorState title="Couldn't load media" description={listError} />
+      ) : media === null ? (
+        <LoadingState label="Loading media…" />
       ) : media.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>{search ? "No images match this search." : "No images yet."}</p>
-          <button type="button" style={buttonStyle} onClick={() => router.push("/admin/media/new")}>
-            + Upload Image
-          </button>
-        </div>
+        <EmptyState
+          title={search ? "No images match this search" : "No images yet"}
+          icon={ImageOff}
+          action={
+            <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/media/new")}>
+              Upload Image
+            </Button>
+          }
+        />
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-              gap: "1rem",
-            }}
-          >
+          <div className={styles.grid}>
             {media.map((item) => (
-              <div key={item.id} style={cardStyle}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- served from our own backend/uploads, not a project asset next/image can optimize across origins */}
-                <img
-                  src={item.fileUrl}
-                  alt={item.altText ?? ""}
-                  style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "4px", background: "#f0f0f0" }}
-                  onError={(e) => {
-                    e.currentTarget.style.opacity = "0.3";
-                  }}
-                />
-                <div style={{ fontSize: "0.85rem", wordBreak: "break-all" }}>{item.fileName}</div>
-                <div style={{ fontSize: "0.8rem", color: "#888" }}>
-                  {formatDate(item.createdAt)}
-                  {item.uploader ? ` · ${item.uploader.name}` : ""}
-                </div>
-
-                {editingId === item.id ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                    <input
-                      style={inputStyle}
-                      type="text"
-                      placeholder="Alt text"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                    />
-                    {editError ? (
-                      <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.8rem" }}>
-                        {editError}
-                      </p>
-                    ) : null}
-                    <div style={{ display: "flex", gap: "0.35rem" }}>
-                      <button type="button" style={buttonStyle} onClick={() => saveEdit(item.id)} disabled={editSaving}>
-                        {editSaving ? "Saving…" : "Save"}
-                      </button>
-                      <button type="button" style={buttonStyle} onClick={cancelEdit} disabled={editSaving}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ fontSize: "0.8rem", color: item.altText ? "inherit" : "#888" }}>
-                      {item.altText || <em>No alt text</em>}
-                    </div>
-                    <div style={{ display: "flex", gap: "0.35rem" }}>
-                      <button type="button" style={buttonStyle} onClick={() => startEdit(item)}>
-                        Edit
-                      </button>
-                      <button type="button" style={buttonStyle} onClick={() => confirmDelete(item)}>
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+              <MediaCard
+                key={item.id}
+                item={item}
+                isEditing={editingId === item.id}
+                editValue={editValue}
+                editSaving={editSaving}
+                editError={editingId === item.id ? editError : ""}
+                onEditValueChange={setEditValue}
+                onStartEdit={() => startEdit(item)}
+                onSaveEdit={() => saveEdit(item.id)}
+                onCancelEdit={cancelEdit}
+                onDelete={() => confirmDelete(item)}
+              />
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            <button type="button" style={buttonStyle} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              ← Prev
-            </button>
-            <span>
-              Page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.total} images)
-            </span>
-            <button
-              type="button"
-              style={buttonStyle}
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next →
-            </button>
-          </div>
+          <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onPageChange={setPage} />
         </>
       )}
 
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Delete <strong>{deleteTarget.fileName}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this image?"
+        description={
+          deleteTarget ? `"${deleteTarget.fileName}" will be permanently deleted. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

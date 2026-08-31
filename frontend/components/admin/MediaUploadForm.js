@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ImagePlus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import styles from "./MediaUploadForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -16,6 +18,11 @@ async function parseJsonSafe(res) {
   }
 }
 
+// Deliberately not built on the shared ImageUpload primitive: that
+// component uploads as soon as a file is picked, but this page's existing
+// behavior lets the admin attach alt text *before* the single upload
+// request goes out (file + altText together). Preserving that flow exactly
+// as it worked before — just restyled.
 export default function MediaUploadForm() {
   const router = useRouter();
 
@@ -75,59 +82,65 @@ export default function MediaUploadForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem",
-        maxWidth: "480px",
-        border: "1px solid #ddd",
-        borderRadius: "6px",
-        padding: "1rem",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0, fontSize: "1.3rem" }}>Upload Image</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/media")}>
-          ← Back to Media
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title="Upload Image"
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/media")}>
+            Back to Media
+          </Button>
+        }
+      />
 
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <label style={labelStyle}>
-        Image file <span style={{ color: "#888", fontWeight: "normal" }}>(JPEG, PNG, GIF, or WebP — up to 5MB)</span>
-        <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleFileChange} required />
-      </label>
+      <section className={styles.section}>
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- local object URL preview, not a project asset
+          <img src={previewUrl} alt="" className={styles.preview} />
+        ) : (
+          <label className={styles.dropzone}>
+            <ImagePlus size={22} strokeWidth={1.5} aria-hidden="true" />
+            <span>Click to choose an image</span>
+            <span className={styles.dropzoneHint}>JPEG, PNG, GIF, or WebP — up to 5MB</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileChange}
+              hidden
+            />
+          </label>
+        )}
 
-      {previewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- local object URL preview, not a project asset
-        <img src={previewUrl} alt="" style={{ maxWidth: "100%", maxHeight: "220px", objectFit: "contain" }} />
-      ) : null}
+        {previewUrl ? (
+          <label className={styles.replaceLink}>
+            Choose a different file
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileChange}
+              hidden
+            />
+          </label>
+        ) : null}
 
-      <label style={labelStyle}>
-        Alt text <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-        <input
-          style={inputStyle}
-          type="text"
+        <FormField
+          label="Alt text"
+          htmlFor="media-alt-text"
+          hint="Optional."
           placeholder="Describe the image for accessibility"
           value={altText}
           onChange={(e) => setAltText(e.target.value)}
         />
-      </label>
+      </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Uploading…" : "Upload"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/media")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/media")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

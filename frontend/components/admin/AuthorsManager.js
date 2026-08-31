@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, User } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const thStyle = { textAlign: "left", padding: "0.5rem", borderBottom: "2px solid #ccc" };
-const tdStyle = { padding: "0.5rem", borderBottom: "1px solid #eee", verticalAlign: "top" };
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import DataTable from "@/components/admin/ui/DataTable";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./AuthorsManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -23,10 +28,10 @@ function truncate(value, max) {
 
 export default function AuthorsManager() {
   const router = useRouter();
+  const showToast = useToast();
 
   const [authors, setAuthors] = useState(null); // null = loading
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState("");
@@ -80,7 +85,7 @@ export default function AuthorsManager() {
         return;
       }
 
-      setSuccessMessage(`Deleted "${deleteTarget.name}".`);
+      showToast(`Deleted "${deleteTarget.name}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadAuthors();
@@ -90,117 +95,92 @@ export default function AuthorsManager() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Authors</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/authors/new")}>
-          + Add Author
-        </button>
-      </div>
-
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
-      ) : null}
-
-      {authors === null ? (
-        <p>Loading authors…</p>
-      ) : authors.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>No authors yet.</p>
-          <button type="button" style={buttonStyle} onClick={() => router.push("/admin/authors/new")}>
-            + Add Author
-          </button>
+  const columns = [
+    {
+      key: "photo",
+      header: "",
+      width: "1%",
+      render: (author) =>
+        author.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL (often our own /uploads media), not a project asset
+          <img
+            src={author.photoUrl}
+            alt=""
+            className={styles.avatar}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <div className={styles.avatarPlaceholder}>
+            <User size={16} strokeWidth={2} aria-hidden="true" />
+          </div>
+        ),
+    },
+    { key: "name", header: "Name", render: (author) => <span className={styles.nameCell}>{author.name}</span> },
+    { key: "bio", header: "Bio", render: (author) => truncate(author.bio, 80) || <span className={styles.muted}>—</span> },
+    { key: "posts", header: "Posts", render: (author) => author._count?.posts ?? 0 },
+    {
+      key: "actions",
+      header: "",
+      width: "1%",
+      render: (author) => (
+        <div className={styles.rowActions}>
+          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => router.push(`/admin/authors/${author.id}/edit`)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => confirmDelete(author)}>
+            Delete
+          </Button>
         </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        title="Authors"
+        description="Author profiles credited on posts."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/authors/new")}>
+            Add Author
+          </Button>
+        }
+      />
+
+      {listError ? (
+        <ErrorState title="Couldn't load authors" description={listError} />
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Photo</th>
-              <th style={thStyle}>Name</th>
-              <th style={thStyle}>Bio</th>
-              <th style={thStyle}>Posts</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {authors.map((author) => (
-              <tr key={author.id}>
-                <td style={tdStyle}>
-                  {author.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- admin-supplied URL (often our own /uploads media), not a project asset
-                    <img
-                      src={author.photoUrl}
-                      alt=""
-                      style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "50%" }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <em style={{ color: "#888" }}>—</em>
-                  )}
-                </td>
-                <td style={tdStyle}>{author.name}</td>
-                <td style={tdStyle}>{truncate(author.bio, 80) || <em style={{ color: "#888" }}>—</em>}</td>
-                <td style={tdStyle}>{author._count?.posts ?? 0}</td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    <button type="button" style={buttonStyle} onClick={() => router.push(`/admin/authors/${author.id}/edit`)}>
-                      Edit
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => confirmDelete(author)}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          rows={authors}
+          getRowKey={(author) => author.id}
+          loadingLabel="Loading authors…"
+          emptyState={
+            <EmptyState
+              title="No authors yet"
+              action={
+                <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/authors/new")}>
+                  Add Author
+                </Button>
+              }
+            />
+          }
+        />
       )}
 
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Delete author <strong>{deleteTarget.name}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this author?"
+        description={
+          deleteTarget ? `"${deleteTarget.name}" will be permanently deleted. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

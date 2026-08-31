@@ -2,20 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./PageForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -35,6 +31,7 @@ const emptyForm = {
 
 export default function PageForm({ mode, pageId }) {
   const router = useRouter();
+  const showToast = useToast();
   const isEditing = mode === "edit";
 
   const [loading, setLoading] = useState(isEditing);
@@ -43,7 +40,6 @@ export default function PageForm({ mode, pageId }) {
   const [form, setForm] = useState(emptyForm);
 
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -84,7 +80,6 @@ export default function PageForm({ mode, pageId }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     const payload = {
@@ -110,11 +105,12 @@ export default function PageForm({ mode, pageId }) {
       }
 
       if (isEditing) {
-        setSuccessMessage("Page updated.");
+        showToast("Page updated.");
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted page, same pattern
         // used by the Posts editor.
+        showToast("Page created.");
         router.push(`/admin/pages/${data.page.id}/edit`);
       }
     } catch {
@@ -124,75 +120,56 @@ export default function PageForm({ mode, pageId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading page form…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "720px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>{isEditing ? "Edit Page" : "Add Page"}</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/pages")}>
-          ← Back to Pages
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title={isEditing ? "Edit Page" : "Add Page"}
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/pages")}>
+            Back to Pages
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Basic</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Basic</h2>
 
-        <label style={labelStyle}>
-          Title
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.title}
-            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Title"
+          htmlFor="page-title"
+          required
+          value={form.title}
+          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Slug{" "}
-          <span style={{ color: "#888", fontWeight: "normal" }}>
-            (optional — leave blank to auto-generate from the title)
-          </span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="(auto)"
-            value={form.slug}
-            onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Slug"
+          htmlFor="page-slug"
+          hint="Optional — leave blank to auto-generate from the title."
+          placeholder="(auto)"
+          value={form.slug}
+          onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
+        />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Content</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Content</h2>
         <RichTextEditor value={form.content} onChange={(html) => setForm((prev) => ({ ...prev, content: html }))} />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Menu</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Menu</h2>
 
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+        <label className={styles.checkboxLabel}>
           <input
             type="checkbox"
             checked={form.showInMenu}
@@ -201,26 +178,25 @@ export default function PageForm({ mode, pageId }) {
           Show in menu
         </label>
 
-        <label style={labelStyle}>
-          Menu position <span style={{ color: "#888", fontWeight: "normal" }}>(optional — leave blank to add it at the end)</span>
-          <input
-            style={inputStyle}
-            type="number"
-            min="0"
-            placeholder="(auto)"
-            value={form.menuPosition}
-            onChange={(e) => setForm((prev) => ({ ...prev, menuPosition: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Menu position"
+          htmlFor="page-menu-position"
+          hint="Optional — leave blank to add it at the end."
+          type="number"
+          min="0"
+          placeholder="(auto)"
+          value={form.menuPosition}
+          onChange={(e) => setForm((prev) => ({ ...prev, menuPosition: e.target.value }))}
+        />
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/pages")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/pages")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

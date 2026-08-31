@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-export default function LogoutButton() {
+export default function LogoutButton({ className }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +16,7 @@ export default function LogoutButton() {
   }
 
   return (
-    <button onClick={handleLogout} disabled={loading}>
+    <button className={className} onClick={handleLogout} disabled={loading}>
       {loading ? "Logging out…" : "Log out"}
     </button>
   );

@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowUp, ArrowDown, X, Plus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ImageUpload from "@/components/admin/ui/ImageUpload";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./BookForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -34,6 +31,7 @@ const emptyForm = {
 
 export default function BookForm({ mode, bookId }) {
   const router = useRouter();
+  const showToast = useToast();
   const isEditing = mode === "edit";
 
   const [loading, setLoading] = useState(isEditing);
@@ -42,7 +40,6 @@ export default function BookForm({ mode, bookId }) {
   const [form, setForm] = useState(emptyForm);
 
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -111,7 +108,6 @@ export default function BookForm({ mode, bookId }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     const payload = {
@@ -139,11 +135,12 @@ export default function BookForm({ mode, bookId }) {
       }
 
       if (isEditing) {
-        setSuccessMessage("Book updated.");
+        showToast("Book updated.");
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted book, same pattern
         // used by the Posts/Pages editors.
+        showToast("Book created.");
         router.push(`/admin/books/${data.book.id}/edit`);
       }
     } catch {
@@ -153,159 +150,131 @@ export default function BookForm({ mode, bookId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading book form…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "720px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>{isEditing ? "Edit Book" : "Add Book"}</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/books")}>
-          ← Back to Books
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title={isEditing ? "Edit Book" : "Add Book"}
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/books")}>
+            Back to Books
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Basic Information</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Basic Information</h2>
 
-        <label style={labelStyle}>
-          Book Title
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.title}
-            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Book Title"
+          htmlFor="book-title"
+          required
+          value={form.title}
+          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Cover Image URL
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.coverImageUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, coverImageUrl: e.target.value }))}
-          />
-        </label>
+        <ImageUpload
+          label="Cover Image"
+          value={form.coverImageUrl}
+          onChange={(url) => setForm((prev) => ({ ...prev, coverImageUrl: url }))}
+        />
 
-        <label style={labelStyle}>
-          Published Year <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="number"
-            placeholder="e.g. 2021"
-            value={form.publishedYear}
-            onChange={(e) => setForm((prev) => ({ ...prev, publishedYear: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Published Year"
+          htmlFor="book-published-year"
+          hint="Optional."
+          type="number"
+          placeholder="e.g. 2021"
+          value={form.publishedYear}
+          onChange={(e) => setForm((prev) => ({ ...prev, publishedYear: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Description
-          <textarea
-            style={{ ...inputStyle, fontFamily: "inherit", minHeight: "120px" }}
-            required
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Description"
+          htmlFor="book-description"
+          as="textarea"
+          required
+          value={form.description}
+          onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+        />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Buy Links</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buy Links</h2>
 
-        {form.buyLinks.length === 0 ? <em style={{ color: "#888" }}>No buy links yet.</em> : null}
+        {form.buyLinks.length === 0 ? <p className={styles.hintInline}>No buy links yet.</p> : null}
 
         {form.buyLinks.map((link, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              gap: "0.5rem",
-              alignItems: "flex-end",
-              flexWrap: "wrap",
-              borderBottom: index < form.buyLinks.length - 1 ? "1px solid #eee" : "none",
-              paddingBottom: "0.75rem",
-            }}
-          >
-            <label style={{ ...labelStyle, flex: "1 1 160px" }}>
-              Platform Name
-              <input
-                style={inputStyle}
-                type="text"
+          <div key={index} className={styles.buyLinkRow}>
+            <div className={styles.buyLinkPlatform}>
+              <FormField
+                label="Platform Name"
+                htmlFor={`book-buylink-platform-${index}`}
                 placeholder="e.g. Amazon"
                 value={link.platformName}
                 onChange={(e) => updateBuyLink(index, "platformName", e.target.value)}
               />
-            </label>
-            <label style={{ ...labelStyle, flex: "2 1 240px" }}>
-              URL
-              <input
-                style={inputStyle}
-                type="text"
+            </div>
+            <div className={styles.buyLinkUrl}>
+              <FormField
+                label="URL"
+                htmlFor={`book-buylink-url-${index}`}
                 placeholder="https://…"
                 value={link.url}
                 onChange={(e) => updateBuyLink(index, "url", e.target.value)}
               />
-            </label>
-            <div style={{ display: "flex", gap: "0.35rem" }}>
-              <button
+            </div>
+            <div className={styles.buyLinkActions}>
+              <Button
                 type="button"
-                style={buttonStyle}
+                variant="ghost"
+                size="sm"
+                icon={ArrowUp}
                 onClick={() => moveBuyLink(index, -1)}
                 disabled={index === 0}
                 aria-label={`Move buy link ${index + 1} up`}
-              >
-                ↑
-              </button>
-              <button
+              />
+              <Button
                 type="button"
-                style={buttonStyle}
+                variant="ghost"
+                size="sm"
+                icon={ArrowDown}
                 onClick={() => moveBuyLink(index, 1)}
                 disabled={index === form.buyLinks.length - 1}
                 aria-label={`Move buy link ${index + 1} down`}
-              >
-                ↓
-              </button>
-              <button type="button" style={buttonStyle} onClick={() => removeBuyLink(index)}>
-                Remove
-              </button>
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                icon={X}
+                onClick={() => removeBuyLink(index)}
+                aria-label={`Remove buy link ${index + 1}`}
+              />
             </div>
           </div>
         ))}
 
-        <button type="button" style={buttonStyle} onClick={addBuyLink}>
-          + Add Buy Link
-        </button>
+        <Button type="button" variant="secondary" size="sm" icon={Plus} onClick={addBuyLink}>
+          Add Buy Link
+        </Button>
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/books")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/books")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

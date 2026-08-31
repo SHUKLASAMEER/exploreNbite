@@ -1,0 +1,30 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 560px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.sectionTitle {
+  font-family: var(--admin-font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}

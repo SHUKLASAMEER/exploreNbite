@@ -1,0 +1,109 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 760px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.sectionTitle {
+  font-family: var(--admin-font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+
+.hintInline {
+  font-size: 0.78rem;
+  font-weight: normal;
+  color: var(--admin-text-muted);
+}
+
+.select {
+  font-family: var(--admin-font-sans);
+  font-size: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  width: 100%;
+}
+
+.select:focus {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: -1px;
+}
+
+.checkboxGrid {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+  color: var(--admin-text);
+}
+
+.tagList {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--admin-accent-soft);
+  color: var(--admin-text);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.82rem;
+}
+
+.tagRemove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  color: var(--admin-text-muted);
+}
+
+.tagRemove:hover {
+  color: var(--admin-danger);
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}

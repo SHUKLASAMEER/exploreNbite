@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertCircle, Plus, ArrowUp, ArrowDown, Pencil, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import DataTable from "@/components/admin/ui/DataTable";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./CategoriesManager.module.css";
 
 const emptyForm = { name: "", slug: "", description: "", sortOrder: "" };
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const thStyle = { textAlign: "left", padding: "0.5rem", borderBottom: "2px solid #ccc" };
-const tdStyle = { padding: "0.5rem", borderBottom: "1px solid #eee", verticalAlign: "top" };
 
 async function parseJsonSafe(res) {
   try {
@@ -20,9 +24,14 @@ async function parseJsonSafe(res) {
 }
 
 export default function CategoriesManager() {
+  const showToast = useToast();
+
   const [categories, setCategories] = useState(null); // null = loading
+  // Reused for both "the list failed to load" and "a reorder action
+  // failed" — same conflation the original component had. Rendered as a
+  // banner (not a full-page error) so a failed reorder never hides
+  // already-loaded data.
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [formMode, setFormMode] = useState(null); // null | "create" | category object being edited
   const [formValues, setFormValues] = useState(emptyForm);
@@ -60,7 +69,6 @@ export default function CategoriesManager() {
     setFormMode("create");
     setFormValues(emptyForm);
     setFormError("");
-    setSuccessMessage("");
   }
 
   function openEditForm(category) {
@@ -72,7 +80,6 @@ export default function CategoriesManager() {
       sortOrder: String(category.sortOrder),
     });
     setFormError("");
-    setSuccessMessage("");
   }
 
   function closeForm() {
@@ -112,7 +119,7 @@ export default function CategoriesManager() {
         return;
       }
 
-      setSuccessMessage(isEditing ? "Category updated." : "Category created.");
+      showToast(isEditing ? "Category updated." : "Category created.");
       setFormMode(null);
       setFormSaving(false);
       await loadCategories();
@@ -149,7 +156,7 @@ export default function CategoriesManager() {
         return;
       }
 
-      setSuccessMessage(`Deleted "${deleteTarget.name}".`);
+      showToast(`Deleted "${deleteTarget.name}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadCategories();
@@ -168,7 +175,7 @@ export default function CategoriesManager() {
     [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
 
     setReorderingId(categories[index].id);
-    setSuccessMessage("");
+    setListError("");
     try {
       const res = await apiFetch("/api/admin/categories/reorder", {
         method: "PATCH",
@@ -191,204 +198,148 @@ export default function CategoriesManager() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Categories</h1>
-        <button type="button" style={buttonStyle} onClick={openCreateForm}>
-          + Add Category
-        </button>
-      </div>
+  const columns = [
+    { key: "name", header: "Name", render: (c) => <span className={styles.nameCell}>{c.name}</span> },
+    { key: "slug", header: "Slug", render: (c) => <code className={styles.slug}>{c.slug}</code> },
+    {
+      key: "description",
+      header: "Description",
+      render: (c) => c.description || <span className={styles.muted}>—</span>,
+    },
+    { key: "sortOrder", header: "Order", render: (c) => c.sortOrder },
+    {
+      key: "actions",
+      header: "",
+      width: "1%",
+      render: (c, index) => (
+        <div className={styles.rowActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ArrowUp}
+            onClick={() => moveCategory(index, -1)}
+            disabled={index === 0 || reorderingId !== null}
+            aria-label={`Move ${c.name} up`}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ArrowDown}
+            onClick={() => moveCategory(index, 1)}
+            disabled={index === categories.length - 1 || reorderingId !== null}
+            aria-label={`Move ${c.name} down`}
+          />
+          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => openEditForm(c)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => confirmDelete(c)}>
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
+  return (
+    <div>
+      <PageHeader
+        title="Categories"
+        description="Post categories and their display order."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={openCreateForm}>
+            Add Category
+          </Button>
+        }
+      />
 
       {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
+        <div className={styles.errorBanner} role="alert">
+          <AlertCircle size={16} strokeWidth={2} aria-hidden="true" />
+          <span>{listError}</span>
+        </div>
       ) : null}
 
       {formMode ? (
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "480px",
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: "1.1rem" }}>
-            {formMode === "create" ? "Add Category" : `Edit "${formMode.name}"`}
-          </h2>
+        <form onSubmit={handleSubmit} className={styles.formCard}>
+          <h2 className={styles.formTitle}>{formMode === "create" ? "Add Category" : `Edit "${formMode.name}"`}</h2>
 
-          {formError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {formError}
-            </p>
-          ) : null}
+          {formError ? <ErrorState title={formError} /> : null}
 
-          <label style={labelStyle}>
-            Name
-            <input
-              style={inputStyle}
-              type="text"
-              required
-              value={formValues.name}
-              onChange={(e) => setFormValues((prev) => ({ ...prev, name: e.target.value }))}
-            />
-          </label>
+          <FormField
+            label="Name"
+            htmlFor="category-name"
+            required
+            value={formValues.name}
+            onChange={(e) => setFormValues((prev) => ({ ...prev, name: e.target.value }))}
+          />
 
-          <label style={labelStyle}>
-            Slug{" "}
-            <span style={{ color: "#888", fontWeight: "normal" }}>
-              (optional — leave blank to auto-generate from the name)
-            </span>
-            <input
-              style={inputStyle}
-              type="text"
-              placeholder="(auto)"
-              value={formValues.slug}
-              onChange={(e) => setFormValues((prev) => ({ ...prev, slug: e.target.value }))}
-            />
-          </label>
+          <FormField
+            label="Slug"
+            htmlFor="category-slug"
+            hint="Optional — leave blank to auto-generate from the name."
+            placeholder="(auto)"
+            value={formValues.slug}
+            onChange={(e) => setFormValues((prev) => ({ ...prev, slug: e.target.value }))}
+          />
 
-          <label style={labelStyle}>
-            Description
-            <textarea
-              style={{ ...inputStyle, fontFamily: "inherit", minHeight: "70px" }}
-              value={formValues.description}
-              onChange={(e) => setFormValues((prev) => ({ ...prev, description: e.target.value }))}
-            />
-          </label>
+          <FormField
+            label="Description"
+            htmlFor="category-description"
+            as="textarea"
+            value={formValues.description}
+            onChange={(e) => setFormValues((prev) => ({ ...prev, description: e.target.value }))}
+          />
 
-          <label style={labelStyle}>
-            Order
-            <input
-              style={inputStyle}
-              type="number"
-              min="0"
-              placeholder="(auto)"
-              value={formValues.sortOrder}
-              onChange={(e) => setFormValues((prev) => ({ ...prev, sortOrder: e.target.value }))}
-            />
-          </label>
+          <FormField
+            label="Order"
+            htmlFor="category-sort-order"
+            hint="Optional — leave blank to add it at the end."
+            type="number"
+            min="0"
+            placeholder="(auto)"
+            value={formValues.sortOrder}
+            onChange={(e) => setFormValues((prev) => ({ ...prev, sortOrder: e.target.value }))}
+          />
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="submit" style={buttonStyle} disabled={formSaving}>
+          <div className={styles.formActions}>
+            <Button type="submit" variant="primary" disabled={formSaving}>
               {formSaving ? "Saving…" : "Save"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={closeForm} disabled={formSaving}>
+            </Button>
+            <Button type="button" variant="secondary" onClick={closeForm} disabled={formSaving}>
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
 
-      {categories === null ? (
-        <p>Loading categories…</p>
-      ) : categories.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>No categories yet.</p>
-          <button type="button" style={buttonStyle} onClick={openCreateForm}>
-            + Add Category
-          </button>
-        </div>
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Name</th>
-              <th style={thStyle}>Slug</th>
-              <th style={thStyle}>Description</th>
-              <th style={thStyle}>Order</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((category, index) => (
-              <tr key={category.id}>
-                <td style={tdStyle}>{category.name}</td>
-                <td style={tdStyle}>
-                  <code>{category.slug}</code>
-                </td>
-                <td style={tdStyle}>{category.description || <em>—</em>}</td>
-                <td style={tdStyle}>{category.sortOrder}</td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      onClick={() => moveCategory(index, -1)}
-                      disabled={index === 0 || reorderingId !== null}
-                      aria-label={`Move ${category.name} up`}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      onClick={() => moveCategory(index, 1)}
-                      disabled={index === categories.length - 1 || reorderingId !== null}
-                      aria-label={`Move ${category.name} down`}
-                    >
-                      ↓
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => openEditForm(category)}>
-                      Edit
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => confirmDelete(category)}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <DataTable
+        columns={columns}
+        rows={categories}
+        getRowKey={(c) => c.id}
+        loadingLabel="Loading categories…"
+        emptyState={
+          <EmptyState
+            title="No categories yet"
+            action={
+              <Button variant="primary" icon={Plus} onClick={openCreateForm}>
+                Add Category
+              </Button>
+            }
+          />
+        }
+      />
 
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Delete category <strong>{deleteTarget.name}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this category?"
+        description={
+          deleteTarget ? `"${deleteTarget.name}" will be permanently deleted. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

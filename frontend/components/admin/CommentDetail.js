@@ -2,17 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, Check, RotateCcw, Ban, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./CommentDetail.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -33,13 +31,13 @@ const STATUS_LABELS = { pending: "Pending", approved: "Approved", spam: "Spam" }
 
 export default function CommentDetail({ commentId }) {
   const router = useRouter();
+  const showToast = useToast();
 
   const [comment, setComment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
   const [actionError, setActionError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [actioning, setActioning] = useState(false);
 
   const [deleteConfirming, setDeleteConfirming] = useState(false);
@@ -75,7 +73,6 @@ export default function CommentDetail({ commentId }) {
   async function changeStatus(status) {
     setActioning(true);
     setActionError("");
-    setSuccessMessage("");
     try {
       const res = await apiFetch(`/api/admin/comments/${commentId}`, {
         method: "PATCH",
@@ -91,7 +88,7 @@ export default function CommentDetail({ commentId }) {
       }
 
       setComment(data.comment);
-      setSuccessMessage(`Marked as ${STATUS_LABELS[status].toLowerCase()}.`);
+      showToast(`Marked as ${STATUS_LABELS[status].toLowerCase()}.`);
       setActioning(false);
     } catch {
       setActionError("Something went wrong. Please try again.");
@@ -120,113 +117,92 @@ export default function CommentDetail({ commentId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading comment…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this comment" description={loadError} />;
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "640px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Comment</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/comments")}>
-          ← Back to Comments
-        </button>
-      </div>
+    <div className={styles.wrap}>
+      <PageHeader
+        title="Comment"
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/comments")}>
+            Back to Comments
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {actionError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {actionError}
-        </p>
-      ) : null}
+      {actionError ? <ErrorState title={actionError} /> : null}
 
-      <section style={sectionStyle}>
-        <div>
-          <strong>Post:</strong> {comment.post?.title ?? "—"}
+      <section className={styles.section}>
+        <div className={styles.field}>
+          <span className={styles.label}>Post</span>
+          <span>{comment.post?.title ?? "—"}</span>
         </div>
-        <div>
-          <strong>From:</strong> {comment.readerName} ({comment.email})
+        <div className={styles.field}>
+          <span className={styles.label}>From</span>
+          <span>
+            {comment.readerName} ({comment.email})
+          </span>
         </div>
-        <div>
-          <strong>Submitted:</strong> {formatDate(comment.createdAt)}
+        <div className={styles.field}>
+          <span className={styles.label}>Submitted</span>
+          <span>{formatDate(comment.createdAt)}</span>
         </div>
-        <div>
-          <strong>Status:</strong> {STATUS_LABELS[comment.status] ?? comment.status}
+        <div className={styles.field}>
+          <span className={styles.label}>Status</span>
+          <span className={`${styles.badge} ${styles[comment.status] ?? ""}`}>
+            {STATUS_LABELS[comment.status] ?? comment.status}
+          </span>
         </div>
-        <div>
-          <strong>Message:</strong>
-          <p style={{ whiteSpace: "pre-wrap", marginTop: "0.4rem" }}>{comment.message}</p>
+        <div className={styles.field}>
+          <span className={styles.label}>Message</span>
+          <p className={styles.message}>{comment.message}</p>
         </div>
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Moderation</h2>
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Moderation</h2>
+        <div className={styles.moderationActions}>
           {comment.status !== "approved" ? (
-            <button type="button" style={buttonStyle} disabled={actioning} onClick={() => changeStatus("approved")}>
+            <Button variant="secondary" icon={Check} disabled={actioning} onClick={() => changeStatus("approved")}>
               Approve
-            </button>
+            </Button>
           ) : null}
           {comment.status !== "pending" ? (
-            <button type="button" style={buttonStyle} disabled={actioning} onClick={() => changeStatus("pending")}>
+            <Button variant="secondary" icon={RotateCcw} disabled={actioning} onClick={() => changeStatus("pending")}>
               Mark Pending
-            </button>
+            </Button>
           ) : null}
           {comment.status !== "spam" ? (
-            <button type="button" style={buttonStyle} disabled={actioning} onClick={() => changeStatus("spam")}>
+            <Button variant="secondary" icon={Ban} disabled={actioning} onClick={() => changeStatus("spam")}>
               Mark Spam
-            </button>
+            </Button>
           ) : null}
         </div>
       </section>
 
-      {deleteConfirming ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{ ...sectionStyle, borderColor: "#e0b0b0" }}
-        >
-          <p style={{ margin: 0 }}>Delete this comment? This can&apos;t be undone.</p>
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button
-              type="button"
-              style={buttonStyle}
-              onClick={() => {
-                setDeleteConfirming(false);
-                setDeleteError("");
-              }}
-              disabled={deleteLoading}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <button type="button" style={buttonStyle} onClick={() => setDeleteConfirming(true)}>
-            Delete Comment
-          </button>
-        </div>
-      )}
+      <div>
+        <Button variant="danger" icon={Trash2} onClick={() => setDeleteConfirming(true)}>
+          Delete Comment
+        </Button>
+      </div>
+
+      <ConfirmDialog
+        open={deleteConfirming}
+        title="Delete this comment?"
+        description="This can't be undone."
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={() => {
+          setDeleteConfirming(false);
+          setDeleteError("");
+        }}
+      />
     </div>
   );
 }

@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const thStyle = { textAlign: "left", padding: "0.5rem", borderBottom: "2px solid #ccc" };
-const tdStyle = { padding: "0.5rem", borderBottom: "1px solid #eee", verticalAlign: "top" };
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import DataTable from "@/components/admin/ui/DataTable";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./PagesManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -25,10 +30,10 @@ function formatDate(iso) {
 
 export default function PagesManager() {
   const router = useRouter();
+  const showToast = useToast();
 
   const [pages, setPages] = useState(null); // null = loading
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState("");
@@ -80,7 +85,7 @@ export default function PagesManager() {
         return;
       }
 
-      setSuccessMessage(`Deleted "${deleteTarget.title}".`);
+      showToast(`Deleted "${deleteTarget.title}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadPages();
@@ -90,107 +95,81 @@ export default function PagesManager() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Pages</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/pages/new")}>
-          + Add Page
-        </button>
-      </div>
-
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
-      ) : null}
-
-      {pages === null ? (
-        <p>Loading pages…</p>
-      ) : pages.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>No pages yet.</p>
-          <button type="button" style={buttonStyle} onClick={() => router.push("/admin/pages/new")}>
-            + Add Page
-          </button>
+  const columns = [
+    { key: "title", header: "Title", render: (page) => <span className={styles.titleCell}>{page.title}</span> },
+    { key: "slug", header: "Slug", render: (page) => <code className={styles.slug}>{page.slug}</code> },
+    {
+      key: "showInMenu",
+      header: "In Menu",
+      render: (page) => (
+        <span className={`${styles.badge} ${page.showInMenu ? styles.yes : styles.no}`}>
+          {page.showInMenu ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    { key: "menuPosition", header: "Position", render: (page) => page.menuPosition ?? <span className={styles.muted}>—</span> },
+    { key: "updatedAt", header: "Updated", render: (page) => formatDate(page.updatedAt) },
+    {
+      key: "actions",
+      header: "",
+      width: "1%",
+      render: (page) => (
+        <div className={styles.rowActions}>
+          <Button variant="ghost" size="sm" icon={Pencil} onClick={() => router.push(`/admin/pages/${page.id}/edit`)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => confirmDelete(page)}>
+            Delete
+          </Button>
         </div>
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <PageHeader
+        title="Pages"
+        description="Static content pages, such as About Us, Contact, and Work With Me."
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/pages/new")}>
+            Add Page
+          </Button>
+        }
+      />
+
+      {listError ? (
+        <ErrorState title="Couldn't load pages" description={listError} />
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Title</th>
-              <th style={thStyle}>Slug</th>
-              <th style={thStyle}>In Menu</th>
-              <th style={thStyle}>Position</th>
-              <th style={thStyle}>Updated</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pages.map((page) => (
-              <tr key={page.id}>
-                <td style={tdStyle}>{page.title}</td>
-                <td style={tdStyle}>
-                  <code>{page.slug}</code>
-                </td>
-                <td style={tdStyle}>{page.showInMenu ? "Yes" : "No"}</td>
-                <td style={tdStyle}>{page.menuPosition ?? <em>—</em>}</td>
-                <td style={tdStyle}>{formatDate(page.updatedAt)}</td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    <button type="button" style={buttonStyle} onClick={() => router.push(`/admin/pages/${page.id}/edit`)}>
-                      Edit
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => confirmDelete(page)}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          columns={columns}
+          rows={pages}
+          getRowKey={(page) => page.id}
+          loadingLabel="Loading pages…"
+          emptyState={
+            <EmptyState
+              title="No pages yet"
+              action={
+                <Button variant="primary" icon={Plus} onClick={() => router.push("/admin/pages/new")}>
+                  Add Page
+                </Button>
+              }
+            />
+          }
+        />
       )}
 
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Delete page <strong>{deleteTarget.title}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this page?"
+        description={
+          deleteTarget ? `"${deleteTarget.title}" will be permanently deleted. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

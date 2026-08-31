@@ -1,0 +1,34 @@
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatarPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nameCell {
+  font-weight: 600;
+  color: var(--admin-heading);
+}
+
+.muted {
+  color: var(--admin-text-muted);
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}

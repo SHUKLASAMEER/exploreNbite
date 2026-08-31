@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, Eye, Check, Ban, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const thStyle = { textAlign: "left", padding: "0.5rem", borderBottom: "2px solid #ccc" };
-const tdStyle = { padding: "0.5rem", borderBottom: "1px solid #eee", verticalAlign: "top" };
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import SearchInput from "@/components/admin/ui/SearchInput";
+import FilterControls from "@/components/admin/ui/FilterControls";
+import DataTable from "@/components/admin/ui/DataTable";
+import Pagination from "@/components/admin/ui/Pagination";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./CommentsManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -33,21 +39,24 @@ const STATUS_LABELS = { pending: "Pending", approved: "Approved", spam: "Spam" }
 
 export default function CommentsManager() {
   const router = useRouter();
+  const showToast = useToast();
 
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   // Default to "pending" — a moderation inbox is most useful starting on
-  // what actually needs a decision, matching the original PDF's
-  // "Inbox-style list with Approve/Delete buttons" requirement. The API
-  // itself is unopinionated (returns every status unless filtered).
+  // what actually needs a decision. The API itself is unopinionated
+  // (returns every status unless filtered).
   const [statusFilter, setStatusFilter] = useState("pending");
   const [page, setPage] = useState(1);
   const limit = 20;
 
   const [comments, setComments] = useState(null); // null = loading
   const [pagination, setPagination] = useState({ page: 1, limit, total: 0, totalPages: 0 });
+  // Reused for both "the list failed to load" and "an approve/spam action
+  // failed" — same conflation the original component had. Rendered as a
+  // banner above the table (not a full-page error) so a failed row action
+  // never hides data that already loaded successfully.
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [actioningId, setActioningId] = useState(null);
 
@@ -100,7 +109,6 @@ export default function CommentsManager() {
   async function changeStatus(comment, status) {
     setActioningId(comment.id);
     setListError("");
-    setSuccessMessage("");
     try {
       const res = await apiFetch(`/api/admin/comments/${comment.id}`, {
         method: "PATCH",
@@ -115,7 +123,7 @@ export default function CommentsManager() {
         return;
       }
 
-      setSuccessMessage(`Marked as ${STATUS_LABELS[status].toLowerCase()}.`);
+      showToast(`Marked as ${STATUS_LABELS[status].toLowerCase()}.`);
       setActioningId(null);
       await loadComments();
     } catch {
@@ -149,7 +157,7 @@ export default function CommentsManager() {
         return;
       }
 
-      setSuccessMessage(`Deleted comment from "${deleteTarget.readerName}".`);
+      showToast(`Deleted comment from "${deleteTarget.readerName}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadComments();
@@ -159,164 +167,122 @@ export default function CommentsManager() {
     }
   }
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Comments</h1>
-      </div>
-
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
-      ) : null}
-
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          style={{ ...inputStyle, minWidth: "220px" }}
-          type="text"
-          placeholder="Search name, email, or message…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <select
-          style={inputStyle}
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="spam">Spam</option>
-        </select>
-      </div>
-
-      {comments === null ? (
-        <p>Loading comments…</p>
-      ) : comments.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>{search || statusFilter ? "No comments match these filters." : "No comments yet."}</p>
+  const columns = [
+    { key: "post", header: "Post", render: (c) => c.post?.title ?? <span className={styles.muted}>—</span> },
+    {
+      key: "commenter",
+      header: "Commenter",
+      render: (c) => (
+        <div>
+          <div className={styles.commenterName}>{c.readerName}</div>
+          <div className={styles.commenterEmail}>{c.email}</div>
         </div>
-      ) : (
-        <>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Post</th>
-                <th style={thStyle}>Commenter</th>
-                <th style={thStyle}>Message</th>
-                <th style={thStyle}>Status</th>
-                <th style={thStyle}>Date</th>
-                <th style={thStyle}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comments.map((comment) => (
-                <tr key={comment.id}>
-                  <td style={tdStyle}>{comment.post?.title ?? <em>—</em>}</td>
-                  <td style={tdStyle}>
-                    <div>{comment.readerName}</div>
-                    <div style={{ color: "#888", fontSize: "0.85rem" }}>{comment.email}</div>
-                  </td>
-                  <td style={tdStyle}>{truncate(comment.message)}</td>
-                  <td style={tdStyle}>{STATUS_LABELS[comment.status] ?? comment.status}</td>
-                  <td style={tdStyle}>{formatDate(comment.createdAt)}</td>
-                  <td style={tdStyle}>
-                    <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                      <button type="button" style={buttonStyle} onClick={() => router.push(`/admin/comments/${comment.id}`)}>
-                        View
-                      </button>
-                      {comment.status !== "approved" ? (
-                        <button
-                          type="button"
-                          style={buttonStyle}
-                          disabled={actioningId === comment.id}
-                          onClick={() => changeStatus(comment, "approved")}
-                        >
-                          Approve
-                        </button>
-                      ) : null}
-                      {comment.status !== "spam" ? (
-                        <button
-                          type="button"
-                          style={buttonStyle}
-                          disabled={actioningId === comment.id}
-                          onClick={() => changeStatus(comment, "spam")}
-                        >
-                          Spam
-                        </button>
-                      ) : null}
-                      <button type="button" style={buttonStyle} onClick={() => confirmDelete(comment)}>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            <button type="button" style={buttonStyle} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              ← Prev
-            </button>
-            <span>
-              Page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.total} comments)
-            </span>
-            <button
-              type="button"
-              style={buttonStyle}
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
+      ),
+    },
+    { key: "message", header: "Message", render: (c) => <span className={styles.message}>{truncate(c.message)}</span> },
+    {
+      key: "status",
+      header: "Status",
+      render: (c) => (
+        <span className={`${styles.badge} ${styles[c.status] ?? ""}`}>{STATUS_LABELS[c.status] ?? c.status}</span>
+      ),
+    },
+    { key: "createdAt", header: "Date", render: (c) => formatDate(c.createdAt) },
+    {
+      key: "actions",
+      header: "",
+      width: "1%",
+      render: (c) => (
+        <div className={styles.rowActions}>
+          <Button variant="ghost" size="sm" icon={Eye} onClick={() => router.push(`/admin/comments/${c.id}`)}>
+            View
+          </Button>
+          {c.status !== "approved" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Check}
+              disabled={actioningId === c.id}
+              onClick={() => changeStatus(c, "approved")}
             >
-              Next →
-            </button>
-          </div>
-        </>
-      )}
-
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Delete the comment from <strong>{deleteTarget.readerName}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
+              Approve
+            </Button>
           ) : null}
+          {c.status !== "spam" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Ban}
+              disabled={actioningId === c.id}
+              onClick={() => changeStatus(c, "spam")}
+            >
+              Spam
+            </Button>
+          ) : null}
+          <Button variant="ghost" size="sm" icon={Trash2} onClick={() => confirmDelete(c)}>
+            Delete
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
+  const hasFilters = Boolean(search || statusFilter);
+
+  return (
+    <div>
+      <PageHeader title="Comments" description="Moderate reader comments." />
+
+      {listError ? (
+        <div className={styles.errorBanner} role="alert">
+          <AlertCircle size={16} strokeWidth={2} aria-hidden="true" />
+          <span>{listError}</span>
         </div>
       ) : null}
+
+      <div className={styles.toolbar}>
+        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Search name, email, or message…" />
+        <FilterControls
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              value: statusFilter,
+              onChange: (v) => {
+                setStatusFilter(v);
+                setPage(1);
+              },
+              options: [
+                { value: "", label: "All statuses" },
+                { value: "pending", label: "Pending" },
+                { value: "approved", label: "Approved" },
+                { value: "spam", label: "Spam" },
+              ],
+            },
+          ]}
+        />
+      </div>
+
+      <DataTable
+        columns={columns}
+        rows={comments}
+        getRowKey={(c) => c.id}
+        loadingLabel="Loading comments…"
+        emptyState={<EmptyState title={hasFilters ? "No comments match these filters" : "No comments yet"} />}
+      />
+      <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onPageChange={setPage} />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this comment?"
+        description={
+          deleteTarget ? `The comment from "${deleteTarget.readerName}" will be permanently deleted. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

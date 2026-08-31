@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const thStyle = { textAlign: "left", padding: "0.5rem", borderBottom: "2px solid #ccc" };
-const tdStyle = { padding: "0.5rem", borderBottom: "1px solid #eee", verticalAlign: "top" };
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import SearchInput from "@/components/admin/ui/SearchInput";
+import DataTable from "@/components/admin/ui/DataTable";
+import Pagination from "@/components/admin/ui/Pagination";
+import ConfirmDialog from "@/components/admin/ui/ConfirmDialog";
+import EmptyState from "@/components/admin/ui/EmptyState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./SubscribersManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -23,7 +29,11 @@ function formatDate(iso) {
   return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+const STATUS_LABELS = { active: "Active", unsubscribed: "Unsubscribed" };
+
 export default function SubscribersManager() {
+  const showToast = useToast();
+
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -32,7 +42,6 @@ export default function SubscribersManager() {
   const [subscribers, setSubscribers] = useState(null); // null = loading
   const [pagination, setPagination] = useState({ page: 1, limit, total: 0, totalPages: 0 });
   const [listError, setListError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteError, setDeleteError] = useState("");
@@ -103,7 +112,7 @@ export default function SubscribersManager() {
         return;
       }
 
-      setSuccessMessage(`Removed "${deleteTarget.email}".`);
+      showToast(`Removed "${deleteTarget.email}".`);
       setDeleteTarget(null);
       setDeleteLoading(false);
       await loadSubscribers();
@@ -113,122 +122,67 @@ export default function SubscribersManager() {
     }
   }
 
+  const columns = [
+    { key: "email", header: "Email", render: (s) => <span className={styles.emailCell}>{s.email}</span> },
+    {
+      key: "status",
+      header: "Status",
+      render: (s) => (
+        <span className={`${styles.badge} ${s.status === "active" ? styles.active : styles.unsubscribed}`}>
+          {STATUS_LABELS[s.status] ?? s.status}
+        </span>
+      ),
+    },
+    { key: "subscribedAt", header: "Subscribed", render: (s) => formatDate(s.subscribedAt) },
+    {
+      key: "actions",
+      header: "",
+      width: "1%",
+      render: (s) => (
+        <Button variant="ghost" size="sm" icon={Trash2} onClick={() => confirmDelete(s)}>
+          Delete
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>
-          Subscribers{" "}
-          {subscribers !== null ? (
-            <span style={{ color: "#888", fontWeight: "normal", fontSize: "1rem" }}>({pagination.total})</span>
-          ) : null}
-        </h1>
+    <div>
+      <PageHeader
+        title="Subscribers"
+        description={subscribers !== null ? `${pagination.total} subscriber${pagination.total === 1 ? "" : "s"}.` : "Newsletter subscriber list."}
+      />
+
+      <div className={styles.toolbar}>
+        <SearchInput value={searchInput} onChange={setSearchInput} placeholder="Search by email…" />
       </div>
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
       {listError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {listError}
-        </p>
-      ) : null}
-
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-        <input
-          style={{ ...inputStyle, minWidth: "220px" }}
-          type="text"
-          placeholder="Search by email…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-      </div>
-
-      {subscribers === null ? (
-        <p>Loading subscribers…</p>
-      ) : subscribers.length === 0 ? (
-        <div style={{ padding: "1.5rem", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <p>{search ? "No subscribers match this search." : "No subscribers yet."}</p>
-        </div>
+        <ErrorState title="Couldn't load subscribers" description={listError} />
       ) : (
         <>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th style={thStyle}>Email</th>
-                <th style={thStyle}>Subscribed</th>
-                <th style={thStyle}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subscribers.map((subscriber) => (
-                <tr key={subscriber.id}>
-                  <td style={tdStyle}>{subscriber.email}</td>
-                  <td style={tdStyle}>{formatDate(subscriber.subscribedAt)}</td>
-                  <td style={tdStyle}>
-                    <button type="button" style={buttonStyle} onClick={() => confirmDelete(subscriber)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            <button type="button" style={buttonStyle} disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              ← Prev
-            </button>
-            <span>
-              Page {pagination.page} of {Math.max(1, pagination.totalPages)} ({pagination.total} subscribers)
-            </span>
-            <button
-              type="button"
-              style={buttonStyle}
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next →
-            </button>
-          </div>
+          <DataTable
+            columns={columns}
+            rows={subscribers}
+            getRowKey={(s) => s.id}
+            loadingLabel="Loading subscribers…"
+            emptyState={<EmptyState title={search ? "No subscribers match this search" : "No subscribers yet"} />}
+          />
+          <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onPageChange={setPage} />
         </>
       )}
 
-      {deleteTarget ? (
-        <div
-          role="alertdialog"
-          aria-label="Confirm delete"
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: "6px",
-            padding: "1rem",
-            maxWidth: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
-        >
-          <p style={{ margin: 0 }}>
-            Remove subscriber <strong>{deleteTarget.email}</strong>? This can&apos;t be undone.
-          </p>
-
-          {deleteError ? (
-            <p role="alert" style={{ color: "crimson", margin: 0, fontSize: "0.9rem" }}>
-              {deleteError}
-            </p>
-          ) : null}
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="button" style={buttonStyle} onClick={performDelete} disabled={deleteLoading}>
-              {deleteLoading ? "Deleting…" : "Delete"}
-            </button>
-            <button type="button" style={buttonStyle} onClick={cancelDelete} disabled={deleteLoading}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Remove this subscriber?"
+        description={
+          deleteTarget ? `"${deleteTarget.email}" will be permanently removed. This can't be undone.` : ""
+        }
+        loading={deleteLoading}
+        error={deleteError}
+        onConfirm={performDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

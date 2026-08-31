@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ImageUpload from "@/components/admin/ui/ImageUpload";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./AuthorForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -35,6 +32,7 @@ const emptyForm = {
 
 export default function AuthorForm({ mode, authorId }) {
   const router = useRouter();
+  const showToast = useToast();
   const isEditing = mode === "edit";
 
   const [loading, setLoading] = useState(isEditing);
@@ -43,7 +41,6 @@ export default function AuthorForm({ mode, authorId }) {
   const [form, setForm] = useState(emptyForm);
 
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -85,7 +82,6 @@ export default function AuthorForm({ mode, authorId }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     const payload = {
@@ -112,11 +108,12 @@ export default function AuthorForm({ mode, authorId }) {
       }
 
       if (isEditing) {
-        setSuccessMessage("Author updated.");
+        showToast("Author updated.");
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted author, same
         // pattern used by the Posts/Pages/Books/Awards editors.
+        showToast("Author created.");
         router.push(`/admin/authors/${data.author.id}/edit`);
       }
     } catch {
@@ -126,116 +123,91 @@ export default function AuthorForm({ mode, authorId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading author form…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "560px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>{isEditing ? "Edit Author" : "Add Author"}</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/authors")}>
-          ← Back to Authors
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title={isEditing ? "Edit Author" : "Add Author"}
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/authors")}>
+            Back to Authors
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Details</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Details</h2>
 
-        <label style={labelStyle}>
-          Name
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Name"
+          htmlFor="author-name"
+          required
+          value={form.name}
+          onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Bio <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <textarea
-            style={{ ...inputStyle, fontFamily: "inherit", minHeight: "100px" }}
-            value={form.bio}
-            onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Bio"
+          htmlFor="author-bio"
+          hint="Optional."
+          as="textarea"
+          value={form.bio}
+          onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Photo URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional — upload via Media, then paste the URL here)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.photoUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, photoUrl: e.target.value }))}
-          />
-        </label>
+        <ImageUpload
+          label="Photo"
+          value={form.photoUrl}
+          onChange={(url) => setForm((prev) => ({ ...prev, photoUrl: url }))}
+        />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Social Links</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Social Links</h2>
 
-        <label style={labelStyle}>
-          Facebook URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.facebookUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, facebookUrl: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Facebook URL"
+          htmlFor="author-facebook"
+          hint="Optional."
+          placeholder="https://…"
+          value={form.facebookUrl}
+          onChange={(e) => setForm((prev) => ({ ...prev, facebookUrl: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Twitter URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.twitterUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Twitter URL"
+          htmlFor="author-twitter"
+          hint="Optional."
+          placeholder="https://…"
+          value={form.twitterUrl}
+          onChange={(e) => setForm((prev) => ({ ...prev, twitterUrl: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Instagram URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.instagramUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Instagram URL"
+          htmlFor="author-instagram"
+          hint="Optional."
+          placeholder="https://…"
+          value={form.instagramUrl}
+          onChange={(e) => setForm((prev) => ({ ...prev, instagramUrl: e.target.value }))}
+        />
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/authors")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/authors")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

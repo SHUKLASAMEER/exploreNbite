@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ImageUpload from "@/components/admin/ui/ImageUpload";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./AwardForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -43,6 +40,7 @@ const emptyForm = {
 
 export default function AwardForm({ mode, awardId }) {
   const router = useRouter();
+  const showToast = useToast();
   const isEditing = mode === "edit";
 
   const [loading, setLoading] = useState(isEditing);
@@ -51,7 +49,6 @@ export default function AwardForm({ mode, awardId }) {
   const [form, setForm] = useState(emptyForm);
 
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -91,7 +88,6 @@ export default function AwardForm({ mode, awardId }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     const payload = {
@@ -116,11 +112,12 @@ export default function AwardForm({ mode, awardId }) {
       }
 
       if (isEditing) {
-        setSuccessMessage("Award updated.");
+        showToast("Award updated.");
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted award, same
         // pattern used by the Posts/Pages/Books editors.
+        showToast("Award created.");
         router.push(`/admin/awards/${data.award.id}/edit`);
       }
     } catch {
@@ -130,91 +127,69 @@ export default function AwardForm({ mode, awardId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading award form…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "560px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>{isEditing ? "Edit Award" : "Add Award"}</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/awards")}>
-          ← Back to Awards
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title={isEditing ? "Edit Award" : "Add Award"}
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/awards")}>
+            Back to Awards
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Details</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Details</h2>
 
-        <label style={labelStyle}>
-          Title
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.title}
-            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Title"
+          htmlFor="award-title"
+          required
+          value={form.title}
+          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Image / Badge URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.imageUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-          />
-        </label>
+        <ImageUpload
+          label="Image / Badge"
+          value={form.imageUrl}
+          onChange={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+        />
 
-        <label style={labelStyle}>
-          Source Link <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.sourceLink}
-            onChange={(e) => setForm((prev) => ({ ...prev, sourceLink: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Source Link"
+          htmlFor="award-source-link"
+          hint="Optional — link to the article or announcement."
+          placeholder="https://…"
+          value={form.sourceLink}
+          onChange={(e) => setForm((prev) => ({ ...prev, sourceLink: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Date Received <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="date"
-            value={form.dateReceived}
-            onChange={(e) => setForm((prev) => ({ ...prev, dateReceived: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Date Received"
+          htmlFor="award-date-received"
+          hint="Optional."
+          type="date"
+          value={form.dateReceived}
+          onChange={(e) => setForm((prev) => ({ ...prev, dateReceived: e.target.value }))}
+        />
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/awards")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/awards")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );

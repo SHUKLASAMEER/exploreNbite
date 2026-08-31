@@ -1,0 +1,47 @@
+.thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-sm);
+  display: block;
+}
+
+.thumbPlaceholder {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.titleCell {
+  font-weight: 600;
+  color: var(--admin-heading);
+}
+
+.muted {
+  color: var(--admin-text-muted);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--admin-accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}

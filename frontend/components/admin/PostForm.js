@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { X, Plus, ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import RichTextEditor from "@/components/admin/RichTextEditor";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ImageUpload from "@/components/admin/ui/ImageUpload";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./PostForm.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -51,6 +48,7 @@ const emptyForm = {
 
 export default function PostForm({ mode, postId }) {
   const router = useRouter();
+  const showToast = useToast();
   const isEditing = mode === "edit";
 
   const [loading, setLoading] = useState(true);
@@ -64,7 +62,6 @@ export default function PostForm({ mode, postId }) {
   const [tagInput, setTagInput] = useState("");
 
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -167,7 +164,6 @@ export default function PostForm({ mode, postId }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     const payload = {
@@ -201,11 +197,12 @@ export default function PostForm({ mode, postId }) {
       }
 
       if (isEditing) {
-        setSuccessMessage("Post updated.");
+        showToast("Post updated.");
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted post, same pattern
         // most CMS post editors use.
+        showToast("Post created.");
         router.push(`/admin/posts/${data.post.id}/edit`);
       }
     } catch {
@@ -215,15 +212,11 @@ export default function PostForm({ mode, postId }) {
   }
 
   if (loading) {
-    return <p>Loading…</p>;
+    return <LoadingState label="Loading post form…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
   const suggestedTags = allTags.filter(
@@ -231,57 +224,42 @@ export default function PostForm({ mode, postId }) {
   );
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "720px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>{isEditing ? "Edit Post" : "Add Post"}</h1>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/posts")}>
-          ← Back to Posts
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader
+        title={isEditing ? "Edit Post" : "Add Post"}
+        actions={
+          <Button variant="secondary" icon={ArrowLeft} onClick={() => router.push("/admin/posts")}>
+            Back to Posts
+          </Button>
+        }
+      />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Basic Information</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Basic Information</h2>
 
-        <label style={labelStyle}>
-          Title
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.title}
-            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Title"
+          htmlFor="post-title"
+          required
+          value={form.title}
+          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Slug{" "}
-          <span style={{ color: "#888", fontWeight: "normal" }}>
-            (optional — leave blank to auto-generate from the title)
-          </span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="(auto)"
-            value={form.slug}
-            onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Slug"
+          htmlFor="post-slug"
+          hint="Optional — leave blank to auto-generate from the title."
+          placeholder="(auto)"
+          value={form.slug}
+          onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
+        />
 
-        <label style={labelStyle}>
-          Category
+        <FormField label="Category" htmlFor="post-category" required>
           <select
-            style={inputStyle}
+            id="post-category"
+            className={styles.select}
             required
             value={form.categoryId}
             onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value }))}
@@ -295,18 +273,21 @@ export default function PostForm({ mode, postId }) {
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <div style={labelStyle}>
-          Additional categories{" "}
-          <span style={{ color: "#888", fontWeight: "normal" }}>
-            (optional — a post can also show up under other category listings besides its primary one above)
+        <div className={styles.field}>
+          <span className={styles.label}>
+            Additional categories
+            <span className={styles.hintInline}>
+              {" "}
+              (optional — a post can also show up under other category listings besides its primary one above)
+            </span>
           </span>
-          <div style={{ display: "flex", gap: "0.9rem", flexWrap: "wrap" }}>
+          <div className={styles.checkboxGrid}>
             {categories
               .filter((c) => String(c.id) !== form.categoryId)
               .map((c) => (
-                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.9rem", fontWeight: "normal" }}>
+                <label key={c.id} className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     checked={form.categoryIds.includes(String(c.id))}
@@ -325,9 +306,14 @@ export default function PostForm({ mode, postId }) {
           </div>
         </div>
 
-        <label style={labelStyle}>
-          Author
-          <select style={inputStyle} required value={form.authorId} onChange={(e) => setForm((prev) => ({ ...prev, authorId: e.target.value }))}>
+        <FormField label="Author" htmlFor="post-author" required>
+          <select
+            id="post-author"
+            className={styles.select}
+            required
+            value={form.authorId}
+            onChange={(e) => setForm((prev) => ({ ...prev, authorId: e.target.value }))}
+          >
             <option value="" disabled>
               Select an author…
             </option>
@@ -337,117 +323,99 @@ export default function PostForm({ mode, postId }) {
               </option>
             ))}
           </select>
-        </label>
+        </FormField>
 
-        <label style={labelStyle}>
-          Featured Image URL
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.featuredImageUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, featuredImageUrl: e.target.value }))}
-          />
-        </label>
+        <ImageUpload
+          label="Featured Image"
+          value={form.featuredImageUrl}
+          onChange={(url) => setForm((prev) => ({ ...prev, featuredImageUrl: url }))}
+        />
 
-        <label style={labelStyle}>
-          Short Description
-          <textarea
-            style={{ ...inputStyle, fontFamily: "inherit", minHeight: "60px" }}
-            maxLength={300}
-            value={form.shortDescription}
-            onChange={(e) => setForm((prev) => ({ ...prev, shortDescription: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Short Description"
+          htmlFor="post-description"
+          as="textarea"
+          maxLength={300}
+          value={form.shortDescription}
+          onChange={(e) => setForm((prev) => ({ ...prev, shortDescription: e.target.value }))}
+        />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Content</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Content</h2>
         <RichTextEditor value={form.content} onChange={(html) => setForm((prev) => ({ ...prev, content: html }))} />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Tags</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Tags</h2>
 
-        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-          {form.tags.length === 0 ? <em style={{ color: "#888" }}>No tags yet.</em> : null}
+        <div className={styles.tagList}>
+          {form.tags.length === 0 ? <em className={styles.hintInline}>No tags yet.</em> : null}
           {form.tags.map((name) => (
-            <span
-              key={name}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                background: "#eef",
-                borderRadius: "999px",
-                padding: "0.2rem 0.6rem",
-                fontSize: "0.85rem",
-              }}
-            >
+            <span key={name} className={styles.tagChip}>
               {name}
               <button
                 type="button"
                 onClick={() => removeTag(name)}
                 aria-label={`Remove tag ${name}`}
-                style={{ border: "none", background: "none", cursor: "pointer", padding: 0, lineHeight: 1 }}
+                className={styles.tagRemove}
               >
-                ×
+                <X size={12} strokeWidth={2.5} />
               </button>
             </span>
           ))}
         </div>
 
-        <label style={labelStyle}>
-          Add a tag
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="Type a tag and press Enter"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagInputKeyDown}
-          />
-        </label>
-        <button type="button" style={buttonStyle} onClick={() => addTag(tagInput)}>
-          + Add Tag
-        </button>
+        <FormField
+          label="Add a tag"
+          htmlFor="post-tag-input"
+          placeholder="Type a tag and press Enter"
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleTagInputKeyDown}
+        />
+        <Button type="button" variant="secondary" size="sm" icon={Plus} onClick={() => addTag(tagInput)}>
+          Add Tag
+        </Button>
 
         {suggestedTags.length > 0 ? (
           <div>
-            <p style={{ margin: "0 0 0.4rem", fontSize: "0.85rem", color: "#666" }}>Existing tags:</p>
-            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+            <p className={styles.hintInline}>Existing tags:</p>
+            <div className={styles.tagList}>
               {suggestedTags.map((t) => (
-                <button key={t.id} type="button" style={buttonStyle} onClick={() => addTag(t.name)}>
-                  + {t.name}
-                </button>
+                <Button key={t.id} type="button" variant="ghost" size="sm" icon={Plus} onClick={() => addTag(t.name)}>
+                  {t.name}
+                </Button>
               ))}
             </div>
           </div>
         ) : null}
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Publishing</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Publishing</h2>
 
-        <label style={labelStyle}>
-          Status
-          <select style={inputStyle} value={form.status} onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}>
+        <FormField label="Status" htmlFor="post-status">
+          <select
+            id="post-status"
+            className={styles.select}
+            value={form.status}
+            onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value }))}
+          >
             <option value="draft">Draft</option>
             <option value="published">Published</option>
           </select>
-        </label>
+        </FormField>
 
-        <label style={labelStyle}>
-          Publish Date
-          <input
-            style={inputStyle}
-            type="datetime-local"
-            value={form.publishDate}
-            onChange={(e) => setForm((prev) => ({ ...prev, publishDate: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Publish Date"
+          htmlFor="post-publish-date"
+          type="datetime-local"
+          value={form.publishDate}
+          onChange={(e) => setForm((prev) => ({ ...prev, publishDate: e.target.value }))}
+        />
 
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+        <label className={styles.checkboxLabel}>
           <input
             type="checkbox"
             checked={form.allowComments}
@@ -456,24 +424,24 @@ export default function PostForm({ mode, postId }) {
           Allow comments
         </label>
 
-        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem" }}>
+        <label className={styles.checkboxLabel}>
           <input
             type="checkbox"
             checked={form.sticky}
             onChange={(e) => setForm((prev) => ({ ...prev, sticky: e.target.checked }))}
           />
-          Sticky{" "}
-          <span style={{ color: "#888" }}>(pinned above other posts on the homepage feed, newest-sticky-first)</span>
+          Sticky
+          <span className={styles.hintInline}> (pinned above other posts on the homepage feed, newest-sticky-first)</span>
         </label>
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button type="button" style={buttonStyle} onClick={() => router.push("/admin/posts")} disabled={saving}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.push("/admin/posts")} disabled={saving}>
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
