@@ -1,0 +1,102 @@
+.page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-md);
+  padding: 2.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.brandLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--admin-text-muted);
+}
+
+.intro {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  font-family: var(--admin-font-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0 0 0.4rem;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--admin-danger-soft);
+  color: var(--admin-danger);
+  border-radius: var(--admin-radius-sm);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.errorBanner svg {
+  flex-shrink: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.submitButton {
+  width: 100%;
+  justify-content: center;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 1.5rem 1rem;
+  }
+
+  .card {
+    padding: 1.75rem 1.35rem;
+  }
+
+  .title {
+    font-size: 1.3rem;
+  }
+}

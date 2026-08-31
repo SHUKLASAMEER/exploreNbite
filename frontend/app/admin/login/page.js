@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import Logo from "@/components/Logo";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import "@/components/admin/ui/tokens.css";
+import styles from "./page.module.css";
 
-// Temporary functional auth screen — not the final Explore N Bite admin
-// design. Just proves login -> cookie -> redirect works end to end.
+// Lives outside the (protected) route group on purpose — this page must
+// never render the AdminShell sidebar/topbar. Auth/session logic below is
+// untouched from the original temporary screen: same endpoint, payload,
+// error handling, and redirect-on-success behavior.
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -41,61 +49,54 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.75rem",
-          width: "100%",
-          maxWidth: "320px",
-        }}
-      >
-        <h1 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Admin Login</h1>
+    <div className={`${styles.page} adminRoot`}>
+      <div className={styles.card}>
+        <div className={styles.brand}>
+          <Logo priority style={{ height: "52px", width: "auto" }} />
+          <span className={styles.brandLabel}>Admin</span>
+        </div>
+
+        <div className={styles.intro}>
+          <h1 className={styles.title}>Sign in</h1>
+          <p className={styles.subtitle}>Manage posts, pages, and site content for Explore N Bite.</p>
+        </div>
 
         {error ? (
-          <p role="alert" style={{ color: "crimson", fontSize: "0.9rem" }}>
-            {error}
-          </p>
+          <div className={styles.errorBanner} role="alert">
+            <AlertCircle size={16} strokeWidth={2} aria-hidden="true" />
+            <span>{error}</span>
+          </div>
         ) : null}
 
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          Email
-          <input
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <FormField
+            label="Email"
+            htmlFor="login-email"
             type="email"
             name="email"
             autoComplete="username"
+            autoFocus
             required
+            disabled={loading}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          Password
-          <input
+          <FormField
+            label="Password"
+            htmlFor="login-password"
             type="password"
             name="password"
             autoComplete="current-password"
             required
+            disabled={loading}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
-
-        <button type="submit" disabled={loading}>
-          {loading ? "Signing in…" : "Log in"}
-        </button>
-      </form>
-    </main>
+          <Button type="submit" variant="primary" disabled={loading} className={styles.submitButton}>
+            {loading ? "Signing in…" : "Log in"}
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 }
