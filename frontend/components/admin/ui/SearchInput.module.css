@@ -1,0 +1,33 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 220px;
+}
+
+.icon {
+  position: absolute;
+  left: 0.65rem;
+  color: var(--admin-text-muted);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  font-family: var(--admin-font-sans);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+}
+
+.input:focus {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: -1px;
+}
+
+.input::-webkit-search-cancel-button {
+  cursor: pointer;
+}

@@ -1,0 +1,44 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 13, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 200;
+}
+
+.dialog {
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-overlay);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.title {
+  font-family: var(--admin-font-serif);
+  font-size: 1.15rem;
+  color: var(--admin-heading);
+  margin: 0 0 0.5rem;
+}
+
+.description {
+  font-size: 0.875rem;
+  color: var(--admin-text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.error {
+  font-size: 0.82rem;
+  color: var(--admin-danger);
+  margin: -0.75rem 0 1rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

@@ -1,0 +1,93 @@
+/* Explore N Bite admin design tokens.
+   Scoped under .adminRoot (applied once by AdminShell) so these never leak
+   into the public site, mirroring how app/(site)/theme.module.css scopes
+   its own tokens under .themeRoot. Dark mode follows the OS preference only
+   (same automatic-only approach as app/globals.css) — no manual toggle. */
+
+.adminRoot {
+  --admin-bg: #f6f4ef;
+  --admin-surface: #ffffff;
+  --admin-surface-raised: #ffffff;
+  --admin-border: #e3ddd0;
+  --admin-border-strong: #cdc4b1;
+
+  --admin-text: #2c2820;
+  --admin-text-muted: #726a5a;
+  --admin-heading: #1c1913;
+
+  --admin-accent: #a8642f;
+  --admin-accent-hover: #8f5327;
+  --admin-accent-contrast: #ffffff;
+  --admin-accent-soft: #f3e6d4;
+
+  --admin-danger: #ac2b21;
+  --admin-danger-hover: #8f231a;
+  --admin-danger-soft: #fbe8e5;
+
+  --admin-success: #2e6b35;
+  --admin-success-soft: #e6f2e6;
+
+  --admin-warning: #8a5a12;
+  --admin-warning-soft: #f7ecd6;
+
+  --admin-sidebar-bg: #201c15;
+  --admin-sidebar-text: #c9c0ac;
+  --admin-sidebar-text-muted: #8f8672;
+  --admin-sidebar-active-bg: #322b1f;
+  --admin-sidebar-active-text: #ffffff;
+  --admin-sidebar-border: #332d22;
+  --admin-sidebar-group-label: #8f8672;
+
+  --admin-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --admin-font-serif: Georgia, "Times New Roman", serif;
+
+  --admin-radius-sm: 6px;
+  --admin-radius-md: 10px;
+  --admin-radius-lg: 14px;
+
+  --admin-shadow-sm: 0 1px 2px rgba(28, 25, 19, 0.06);
+  --admin-shadow-md: 0 4px 16px rgba(28, 25, 19, 0.08);
+  --admin-shadow-overlay: 0 12px 40px rgba(28, 25, 19, 0.22);
+
+  --admin-topbar-height: 64px;
+  --admin-sidebar-width: 264px;
+
+  color: var(--admin-text);
+  background: var(--admin-bg);
+  font-family: var(--admin-font-sans);
+}
+
+@media (prefers-color-scheme: dark) {
+  .adminRoot {
+    --admin-bg: #14130f;
+    --admin-surface: #1c1a15;
+    --admin-surface-raised: #221f19;
+    --admin-border: #332e24;
+    --admin-border-strong: #453f30;
+
+    --admin-text: #e9e3d5;
+    --admin-text-muted: #a89c85;
+    --admin-heading: #f5efe2;
+
+    --admin-accent: #d0904f;
+    --admin-accent-hover: #dda061;
+    --admin-accent-contrast: #201607;
+    --admin-accent-soft: #3a2c17;
+
+    --admin-danger: #e2685c;
+    --admin-danger-hover: #e87e73;
+    --admin-danger-soft: #3a2119;
+
+    --admin-success: #7ec384;
+    --admin-success-soft: #1e2e1f;
+
+    --admin-warning: #d9ab5f;
+    --admin-warning-soft: #372c17;
+
+    --admin-sidebar-bg: #0f0e0b;
+    --admin-sidebar-active-bg: #221f19;
+    --admin-sidebar-border: #26221a;
+
+    color-scheme: dark;
+  }
+}

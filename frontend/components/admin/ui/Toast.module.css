@@ -1,0 +1,50 @@
+.stack {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 300;
+  max-width: min(360px, calc(100vw - 2.5rem));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--admin-radius-sm);
+  box-shadow: var(--admin-shadow-overlay);
+  font-size: 0.85rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+
+.success {
+  border-left: 3px solid var(--admin-success);
+}
+.success svg {
+  color: var(--admin-success);
+}
+
+.error {
+  border-left: 3px solid var(--admin-danger);
+}
+.error svg {
+  color: var(--admin-danger);
+}
+
+.message {
+  flex: 1;
+}
+
+.close {
+  background: none;
+  border: none;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 0;
+}

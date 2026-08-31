@@ -1,0 +1,41 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.25rem;
+  flex-wrap: wrap;
+}
+
+.summary {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+}
+
+.controls {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent);
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
