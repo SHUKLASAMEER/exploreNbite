@@ -1,6 +1,7 @@
 const { prisma } = require("../config/prisma");
 const { parsePostInput, resolveTagIds, resolveCategoryIds, VALID_STATUSES } = require("../utils/validation/posts");
 const { NotFoundError, ValidationError, ConflictError } = require("../utils/errors");
+const { sanitizeContentHtml } = require("../utils/sanitizeHtml");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -144,6 +145,10 @@ async function list(query) {
 
 async function create(body) {
   const data = parsePostInput(body, "create");
+  // Harden admin-authored rich text at the write boundary (removes
+  // <script>/event handlers/js: URIs/untrusted iframes; keeps all normal
+  // formatting). See utils/sanitizeHtml.js.
+  if (data.content != null) data.content = sanitizeContentHtml(data.content);
 
   const [category, author, existingSlug] = await Promise.all([
     prisma.category.findUnique({ where: { id: data.categoryId } }),
@@ -214,6 +219,7 @@ async function update(rawId, body) {
   }
 
   const data = parsePostInput(body, "update");
+  if (data.content != null) data.content = sanitizeContentHtml(data.content);
 
   if (data.categoryId !== undefined) {
     const category = await prisma.category.findUnique({ where: { id: data.categoryId } });

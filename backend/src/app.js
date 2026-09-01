@@ -14,14 +14,17 @@ function createApp() {
   app.use(helmet());
   app.use(
     cors({
-      // Frontend and backend are now separate applications (different
-      // ports) — credentials: true + an explicit origin (not "*") is
-      // required for the browser to send/receive the session cookie
-      // cross-origin. FRONTEND_URL and this origin share a hostname
-      // ("localhost") in local dev, so the cookie's SameSite=lax still
-      // gets attached to these cross-origin-but-same-site requests; see
-      // backend/README for the cross-origin cookie notes.
-      origin: env.frontendUrl,
+      // Credentials + an explicit allow-list of origins (never "*") — the
+      // browser requires this to send/receive the session cookie
+      // cross-origin. FRONTEND_URL may list more than one origin (apex +
+      // www, a preview domain, …); each is matched exactly. A request with
+      // no Origin header (curl, same-origin, server-to-server) is allowed.
+      origin(origin, callback) {
+        if (!origin || env.frontendUrls.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
       credentials: true,
     })
   );

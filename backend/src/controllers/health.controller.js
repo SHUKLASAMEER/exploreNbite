@@ -6,21 +6,22 @@ const { asyncHandler } = require("../utils/asyncHandler");
 const check = asyncHandler(async (req, res) => {
   const startedAt = Date.now();
   let database = "unreachable";
-  let databaseError;
 
   try {
     await prisma.$queryRaw`SELECT 1`;
     database = "connected";
   } catch (err) {
     database = "unreachable";
-    databaseError = err instanceof Error ? err.message : "Unknown database error";
+    // Log the real reason server-side only — the DB error message can
+    // contain the connection string / internal host names, so it must not
+    // go out in the response body of an unauthenticated endpoint.
+    console.error("Health check: database unreachable:", err instanceof Error ? err.message : err);
   }
 
   const body = {
     status: database === "connected" ? "ok" : "degraded",
     api: "running",
     database,
-    ...(databaseError ? { databaseError } : {}),
     responseTimeMs: Date.now() - startedAt,
     timestamp: new Date().toISOString(),
   };

@@ -1,5 +1,6 @@
 const { prisma } = require("../config/prisma");
 const { parseSubscriberInput } = require("../utils/validation/subscribers");
+const { enforceHoneypot } = require("../utils/antiSpam");
 const { NotFoundError, ValidationError, ConflictError } = require("../utils/errors");
 
 const DEFAULT_LIMIT = 20;
@@ -29,6 +30,7 @@ function parseId(rawId) {
 // ---------------------------------------------------------------------------
 
 async function subscribe(body) {
+  enforceHoneypot(body);
   const { email } = parseSubscriberInput(body);
 
   const existing = await prisma.subscriber.findUnique({ where: { email } });

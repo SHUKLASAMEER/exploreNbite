@@ -1,5 +1,6 @@
 const express = require("express");
 const subscriberController = require("../controllers/subscriber.controller");
+const { publicWriteRateLimit } = require("../middleware/rateLimit");
 
 // Public — mounted at /subscribers in routes/index.js (NOT under /admin/*,
 // and NOT wrapped with requireAdmin), giving POST /api/subscribers. Same
@@ -7,7 +8,7 @@ const subscriberController = require("../controllers/subscriber.controller");
 // comments in Phase 2H (routes/publicComment.routes.js).
 const router = express.Router();
 
-router.post("/", subscriberController.subscribePublic);
+router.post("/", publicWriteRateLimit, subscriberController.subscribePublic);
 router.get("/count", subscriberController.countPublic);
 
 module.exports = router;

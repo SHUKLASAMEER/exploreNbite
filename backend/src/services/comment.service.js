@@ -1,5 +1,6 @@
 const { prisma } = require("../config/prisma");
 const { parsePublicCommentInput } = require("../utils/validation/comments");
+const { enforceHoneypot } = require("../utils/antiSpam");
 const { NotFoundError, ValidationError, AppError } = require("../utils/errors");
 
 const STATUSES = ["pending", "approved", "spam"];
@@ -139,6 +140,10 @@ async function listPublicByPost(rawPostId) {
 }
 
 async function createPublic(rawPostId, body) {
+  // Silent honeypot check — rejects bot submissions that fill the hidden
+  // "website" field, with a generic error (no "you're a bot" signal).
+  enforceHoneypot(body);
+
   const postId = Number(rawPostId);
   if (!Number.isInteger(postId) || postId <= 0) {
     throw new ValidationError("Invalid post id.");

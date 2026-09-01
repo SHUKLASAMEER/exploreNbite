@@ -1,5 +1,6 @@
 const express = require("express");
 const commentController = require("../controllers/comment.controller");
+const { publicWriteRateLimit } = require("../middleware/rateLimit");
 
 // Public — mounted at /posts in routes/index.js (NOT under /admin/*, and
 // NOT wrapped with requireAdmin), giving POST /api/posts/:postId/comments
@@ -11,6 +12,6 @@ const commentController = require("../controllers/comment.controller");
 const router = express.Router();
 
 router.get("/:postId/comments", commentController.listPublicByPost);
-router.post("/:postId/comments", commentController.createPublic);
+router.post("/:postId/comments", publicWriteRateLimit, commentController.createPublic);
 
 module.exports = router;

@@ -4,10 +4,15 @@ const { expiresInToMaxAgeSeconds } = require("../utils/cookie");
 const { SESSION_COOKIE_NAME } = require("../middleware/requireAdmin");
 const authService = require("../services/auth.service");
 
+// httpOnly is always on; sameSite / secure / domain come from config
+// (env.cookie) so a cross-site deployment can switch to SameSite=None;
+// Secure without a code change. Defaults are unchanged from before
+// (SameSite=Lax, Secure only in production).
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: env.nodeEnv === "production",
-  sameSite: "lax",
+  secure: env.cookie.secure,
+  sameSite: env.cookie.sameSite,
+  domain: env.cookie.domain,
   path: "/",
 };
 
@@ -33,7 +38,12 @@ const login = asyncHandler(async (req, res) => {
 // without a valid session on purpose (see routes/auth.routes.js), so a
 // client with a stale/expired token can still reliably clear it.
 const logout = asyncHandler(async (req, res) => {
-  res.clearCookie(SESSION_COOKIE_NAME, { path: "/" });
+  res.clearCookie(SESSION_COOKIE_NAME, {
+    path: "/",
+    domain: env.cookie.domain,
+    sameSite: env.cookie.sameSite,
+    secure: env.cookie.secure,
+  });
   res.json({ success: true });
 });
 

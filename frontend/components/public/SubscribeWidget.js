@@ -23,6 +23,7 @@ async function parseJsonSafe(res) {
 // "Join N other subscribers," not copying live's unrelated figure.
 export default function SubscribeWidget({ count }) {
   const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot — real users never fill this
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [message, setMessage] = useState("");
 
@@ -35,7 +36,7 @@ export default function SubscribeWidget({ count }) {
       const res = await apiFetch("/api/subscribers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, website }),
       });
       const data = await parseJsonSafe(res);
 
@@ -46,7 +47,11 @@ export default function SubscribeWidget({ count }) {
       }
 
       setStatus("success");
-      setMessage("You're subscribed! Check your inbox to confirm.");
+      // Honest copy: the address is recorded. There is no confirmation
+      // email and no automated new-post email yet (no mail transport
+      // configured — see the audit), so this no longer claims "check your
+      // inbox" or promises delivery.
+      setMessage("Thanks — you're on the list.");
       setEmail("");
     } catch {
       setStatus("error");
@@ -70,6 +75,18 @@ export default function SubscribeWidget({ count }) {
           className={styles.subscribeInput}
           disabled={status === "loading"}
         />
+        <span aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+          <label htmlFor="subscribe-website">Leave this field empty</label>
+          <input
+            id="subscribe-website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </span>
         <Button variant="solid" type="submit" disabled={status === "loading"}>
           {status === "loading" ? "Subscribing…" : "Subscribe"}
         </Button>

@@ -13,7 +13,9 @@ async function parseJsonSafe(res) {
   }
 }
 
-const emptyForm = { readerName: "", email: "", message: "" };
+// `website` is the honeypot — a hidden field a real user never fills; the
+// backend rejects any submission that includes it (see utils/antiSpam.js).
+const emptyForm = { readerName: "", email: "", message: "", website: "" };
 
 // Posts to the existing public POST /api/posts/:postId/comments (built in
 // an earlier phase — backend/src/services/comment.service.js#createPublic).
@@ -88,6 +90,18 @@ export default function CommentForm({ postId }) {
         className={styles.textarea}
         disabled={status === "loading"}
       />
+      <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+        <label htmlFor="comment-website">Leave this field empty</label>
+        <input
+          id="comment-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.website}
+          onChange={(e) => setForm((prev) => ({ ...prev, website: e.target.value }))}
+        />
+      </div>
       <div>
         <Button variant="solid" type="submit" disabled={status === "loading"}>
           {status === "loading" ? "Posting…" : "Post Comment"}

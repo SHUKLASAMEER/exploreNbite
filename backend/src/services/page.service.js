@@ -1,6 +1,7 @@
 const { prisma } = require("../config/prisma");
 const { parsePageInput, resolveMenuPosition } = require("../utils/validation/pages");
 const { NotFoundError, ValidationError, ConflictError } = require("../utils/errors");
+const { sanitizeContentHtml } = require("../utils/sanitizeHtml");
 
 async function list() {
   return prisma.page.findMany({
@@ -20,6 +21,7 @@ async function list() {
 
 async function create(body) {
   const data = parsePageInput(body, "create");
+  if (data.content != null) data.content = sanitizeContentHtml(data.content);
 
   const existingSlug = await prisma.page.findUnique({ where: { slug: data.slug } });
   if (existingSlug) {
@@ -71,6 +73,7 @@ async function update(rawId, body) {
   }
 
   const data = parsePageInput(body, "update");
+  if (data.content != null) data.content = sanitizeContentHtml(data.content);
 
   if (data.slug && data.slug !== existingPage.slug) {
     const conflict = await prisma.page.findFirst({ where: { slug: data.slug, NOT: { id } } });

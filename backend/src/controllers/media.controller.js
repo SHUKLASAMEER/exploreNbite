@@ -9,7 +9,7 @@ const list = asyncHandler(async (req, res) => {
 // req.file is populated by middleware/upload.js's uploadSingleImage
 // (mounted in routes/media.routes.js) before this ever runs.
 const create = asyncHandler(async (req, res) => {
-  const media = await mediaService.create(req.file, req.body, req.admin, req);
+  const media = await mediaService.create(req.file, req.body, req.admin);
   res.status(201).json({ media });
 });
 

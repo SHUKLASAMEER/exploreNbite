@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 const { prisma } = require("../config/prisma");
+const { env } = require("../config/env");
 const { parseMediaUpdateInput } = require("../utils/validation/media");
 const { NotFoundError, ValidationError } = require("../utils/errors");
 const { UPLOADS_DIR } = require("../middleware/upload");
@@ -28,11 +29,16 @@ function parseId(rawId) {
   return id;
 }
 
-// Builds the public URL from the *actual incoming request's* origin rather
-// than a hardcoded config value, so it's correct in dev regardless of port
-// without a new env var.
-function toPublicUrl(req, fileName) {
-  return `${req.protocol}://${req.get("host")}/uploads/${fileName}`;
+// Media URLs are stored ROOT-RELATIVE ("/uploads/<file>") by default. The
+// frontend proxies /uploads/* to this API (see frontend/next.config.js), so
+// a relative URL resolves correctly from the public site, the admin UI and
+// social-scraper fetches alike — on any domain, without ever persisting a
+// host (localhost or otherwise) into the database. Set ASSET_BASE_URL to a
+// CDN / dedicated media origin to store absolute URLs instead. The request
+// Host header is deliberately no longer trusted here.
+function toPublicUrl(fileName) {
+  const relative = `/uploads/${fileName}`;
+  return env.assetBaseUrl ? `${env.assetBaseUrl}${relative}` : relative;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,7 +67,7 @@ async function list(query, req) {
   };
 }
 
-async function create(file, body, admin, req) {
+async function create(file, body, admin) {
   if (!file) {
     throw new ValidationError("An image file is required.");
   }
@@ -70,7 +76,7 @@ async function create(file, body, admin, req) {
 
   return prisma.media.create({
     data: {
-      fileUrl: toPublicUrl(req, file.filename),
+      fileUrl: toPublicUrl(file.filename),
       fileName: file.filename,
       altText: altText || null,
       uploadedBy: admin?.id ?? null,
