@@ -5,12 +5,17 @@ import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicCategoryBySlug, getPublicPosts } from "@/lib/publicApi";
+import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const { category } = await getPublicCategoryBySlug(slug);
   if (!category) return {};
-  return { title: `${category.name} | Explore N Bite`, description: category.description ?? undefined };
+  return buildMetadata({
+    path: `/category/${category.slug}`,
+    title: category.name,
+    description: category.description ?? `Posts filed under ${category.name} on Explore N Bite.`,
+  });
 }
 
 export default async function CategoryPage({ params, searchParams }) {

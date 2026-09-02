@@ -25,9 +25,17 @@ function normalizeSortOrder(rawValue) {
 }
 
 function isValidUrl(value) {
+  // Accept either a fully-qualified URL (external link) OR a root-relative
+  // in-site path like "/books" (an internal destination that has no Page or
+  // Category row to point a page/category menu item at). A root-relative
+  // value keeps the nav working regardless of the deployed domain, so no
+  // "http://localhost:3000/…" ever gets persisted here.
+  if (/^\/(?!\/)/.test(value)) {
+    return !/\s/.test(value);
+  }
   try {
     const parsed = new URL(value);
-    return Boolean(parsed.protocol && parsed.host);
+    return Boolean(parsed.protocol && parsed.host && /^https?:$/.test(parsed.protocol));
   } catch {
     return false;
   }
@@ -123,7 +131,9 @@ function parseMenuItemInput(body, mode) {
         throw new ValidationError(`Custom URL must be ${CUSTOM_URL_MAX} characters or fewer.`);
       }
       if (!isValidUrl(customUrlRaw)) {
-        throw new ValidationError("Custom URL must be a valid, fully-qualified URL (e.g. https://example.com/page).");
+        throw new ValidationError(
+          "Custom URL must be a full https:// URL (e.g. https://example.com/page) or a root-relative path (e.g. /books)."
+        );
       }
       if (pageId !== null || categoryId !== null) {
         throw new ValidationError("A custom URL link can't also specify a page or category.");

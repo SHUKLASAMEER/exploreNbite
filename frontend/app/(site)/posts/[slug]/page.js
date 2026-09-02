@@ -8,6 +8,7 @@ import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
+import { buildMetadata } from "@/lib/seo";
 import { formatDate } from "@/lib/formatDate";
 import styles from "@/components/public/SinglePost.module.css";
 import commentStyles from "@/components/public/Comments.module.css";
@@ -16,7 +17,16 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const { post } = await getPublicPostBySlug(slug);
   if (!post) return {};
-  return { title: `${post.title} | Explore N Bite`, description: post.shortDescription ?? undefined };
+  return buildMetadata({
+    path: `/posts/${post.slug}`,
+    title: post.title,
+    description: post.shortDescription ?? undefined,
+    image: post.featuredImageUrl ?? undefined,
+    type: "article",
+    publishedTime: post.publishDate ?? undefined,
+    modifiedTime: post.updatedAt ?? post.publishDate ?? undefined,
+    authors: post.author?.name ? [post.author.name] : undefined,
+  });
 }
 
 // Absolute post URL for the share-row links below — Twitter/Facebook/

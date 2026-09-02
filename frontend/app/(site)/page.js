@@ -3,11 +3,14 @@ import Sidebar from "@/components/public/Sidebar";
 import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import { getPublicPosts } from "@/lib/publicApi";
+import { buildMetadata } from "@/lib/seo";
+import { SITE_NAME } from "@/lib/siteConfig";
 
-export const metadata = {
-  title: "Explore N Bite",
-  description: "Offbeat travel stories and food, one bite at a time.",
-};
+export const metadata = buildMetadata({
+  path: "/",
+  title: { absolute: `${SITE_NAME} — Offbeat India Travel & Food` },
+  description: "Offbeat travel stories and food, one bite at a time — by Sweta Papaiyawala.",
+});
 
 // Home = the blog index (all published posts, newest first, paginated) —
 // same as the live site, which has no separate "/blog" route; the site
