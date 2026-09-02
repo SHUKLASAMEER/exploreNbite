@@ -6,7 +6,7 @@
   height: 100vh;
   position: sticky;
   top: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--admin-sidebar-border);
@@ -29,6 +29,8 @@
 }
 
 .groups {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0.75rem 0.75rem 1.5rem;
   display: flex;
   flex-direction: column;

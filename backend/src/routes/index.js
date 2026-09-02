@@ -26,6 +26,7 @@ const publicBookRoutes = require("./publicBook.routes");
 const publicAwardRoutes = require("./publicAward.routes");
 const publicPageRoutes = require("./publicPage.routes");
 const contactRoutes = require("./contact.routes");
+const contactMessageRoutes = require("./contactMessage.routes");
 
 const router = express.Router();
 
@@ -90,6 +91,7 @@ router.use("/admin/books", requireAdmin, bookRoutes);
 router.use("/admin/awards", requireAdmin, awardRoutes);
 router.use("/admin/comments", requireAdmin, commentRoutes);
 router.use("/admin/subscribers", requireAdmin, subscriberRoutes);
+router.use("/admin/messages", requireAdmin, contactMessageRoutes);
 router.use("/admin/media", requireAdmin, mediaRoutes);
 router.use("/admin/settings", requireAdmin, settingsRoutes);
 router.use("/admin/menu", requireAdmin, menuItemRoutes);

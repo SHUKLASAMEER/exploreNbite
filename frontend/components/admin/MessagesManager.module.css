@@ -1,0 +1,76 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filterButton {
+  border: 1px solid var(--admin-border, #e2e2e2);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #333);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filterButton:hover {
+  border-color: var(--admin-accent, #ca9b52);
+}
+
+.filterActive {
+  background: var(--admin-accent, #ca9b52);
+  border-color: var(--admin-accent, #ca9b52);
+  color: #fff;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.email {
+  font-size: 12px;
+  color: var(--admin-muted, #6b7079);
+}
+
+.message {
+  max-width: 640px;
+}
+
+.subject {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.body {
+  white-space: pre-wrap;
+  font-size: 13px;
+  color: var(--admin-text, #333);
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.unhandled {
+  background: var(--admin-warning-soft);
+  color: var(--admin-warning);
+}
+
+.handled {
+  background: var(--admin-success-soft);
+  color: var(--admin-success);
+}

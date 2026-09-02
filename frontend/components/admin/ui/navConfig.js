@@ -11,6 +11,7 @@ import {
   Settings,
   MessageSquare,
   Mail,
+  Inbox,
 } from "lucide-react";
 
 // Single source of truth for the sidebar — mirrors the module list that
@@ -44,6 +45,7 @@ export const NAV_GROUPS = [
     label: "Community",
     items: [
       { href: "/admin/comments", label: "Comments", icon: MessageSquare },
+      { href: "/admin/messages", label: "Messages", icon: Inbox },
       { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
     ],
   },
