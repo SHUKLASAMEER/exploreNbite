@@ -329,3 +329,30 @@ model Settings {
 
   @@map("settings")
 }
+
+// ---------------------------------------------------------------------------
+// Contact / "Work With Me" enquiries
+// ---------------------------------------------------------------------------
+// Public enquiry submissions from the Contact and Work With Me pages. Always
+// persisted; an email to Settings.contactEmail is *attempted* only when a
+// mail transport is configured (see utils/mailer.js) — the flow never
+// depends on email working. `handled` is a simple admin "dealt with" flag.
+
+enum EnquiryTopic {
+  contact
+  work_with_me
+}
+
+model ContactMessage {
+  id        Int          @id @default(autoincrement())
+  topic     EnquiryTopic @default(contact)
+  name      String       @db.VarChar(120)
+  email     String       @db.VarChar(190)
+  subject   String?      @db.VarChar(200)
+  message   String       @db.Text
+  handled   Boolean      @default(false)
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@index([handled, createdAt])
+  @@map("contact_messages")
+}

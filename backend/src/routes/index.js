@@ -25,6 +25,7 @@ const publicAuthorRoutes = require("./publicAuthor.routes");
 const publicBookRoutes = require("./publicBook.routes");
 const publicAwardRoutes = require("./publicAward.routes");
 const publicPageRoutes = require("./publicPage.routes");
+const contactRoutes = require("./contact.routes");
 
 const router = express.Router();
 
@@ -36,12 +37,20 @@ router.use("/health", healthRoutes);
 // mounted at the same base path, matched by distinct sub-paths, same as any
 // other Express router stack. Not the admin Posts module (that's
 // /admin/posts below) and not wrapped with requireAdmin.
+// publicWriteRateLimit (20 req / 10 min / IP — generous, never blocks real
+// use) guards the three visitor-writable endpoints against bulk spam. It is
+// attached inside each write route definition (POST only) so the GET halves
+// of these same routers are unaffected — see publicComment.routes.js,
+// publicSubscriber.routes.js, contact.routes.js.
 router.use("/posts", publicCommentRoutes);
 router.use("/posts", publicPostRoutes);
 
 // Public — POST /api/subscribers only. Same pattern as the comments route
 // above: a separate public router mounted outside /admin/*.
 router.use("/subscribers", publicSubscriberRoutes);
+
+// Public — POST /api/contact (Contact + Work With Me enquiry forms).
+router.use("/contact", contactRoutes);
 
 // Public — GET /api/menu and GET /api/settings only, for the public site's
 // navigation and branding/footer/social/contact info. Same pattern as the

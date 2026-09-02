@@ -42,3 +42,11 @@
   margin: 12px 0 0;
   color: var(--enb-meta);
 }
+
+.formSuccess {
+  color: #1a7f4b;
+}
+
+.formError {
+  color: #b23b32;
+}
