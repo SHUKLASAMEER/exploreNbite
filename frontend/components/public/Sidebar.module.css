@@ -3,6 +3,40 @@
   overflow: hidden;
 }
 
+/* Sidebar.js root wrapper. Fills the full height of `.sidebar` (which is
+   `align-self: stretch` — as tall as the main column), so it becomes the
+   containing block that gives `.stickyBadgeBlock` its travel room: the
+   block can stay pinned until this wrapper's bottom (≈ the main column's
+   bottom) scrolls past, then it releases — well before the footer. */
+.sidebarInner {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Partial sticky: ONLY the three small badge widgets — Tripoto, IndiBlogger,
+   Sur.ly — are wrapped in this block (see Sidebar.js). Everything above it,
+   INCLUDING the "Awarded best travel & food writer" heading + trophy photo,
+   is normal flow and scrolls away (the award photo is tall enough that
+   including it pushed the badges below the fold once the block pinned). The
+   block starts at its natural position low in the sidebar and only pins
+   once its own top reaches 24px from the viewport top — it never pins "from
+   the start". All three badges pin as one unit because it's a single sticky
+   element. Bounded by `.sidebarInner`, so it stops before the footer; no
+   JS, no `position: fixed`, no inner scrollbar. Combined height of the
+   three badges (~560px) fits any desktop/tablet viewport. */
+.stickyBadgeBlock {
+  position: sticky;
+  top: 24px;
+}
+
+@media screen and (max-width: 980px) {
+  /* Stacked layout: the badge block returns to normal document flow. */
+  .stickyBadgeBlock {
+    position: static;
+    top: auto;
+  }
+}
+
 /* ---------- Search widget ---------- */
 .searchForm {
   position: relative;

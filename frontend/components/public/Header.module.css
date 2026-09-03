@@ -40,8 +40,9 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  column-gap: 18px;
+  column-gap: var(--nav-gap);
   min-width: 0;
+  --nav-gap: 18px;
 }
 
 .navLink {
@@ -71,6 +72,30 @@
   flex-shrink: 0;
 }
 
+/* Second half of the hover-gap fix: .navGroup itself is only as wide as its
+   trigger button (an inline-flex container sizes to its in-flow content,
+   and the absolutely-positioned dropdown doesn't count), but .navDropdown
+   is wider than most triggers and left-aligned to the trigger's own left
+   edge — so it overhangs to the right. The flex `column-gap` between this
+   trigger and the NEXT top-level item is real empty space that belongs to
+   neither box, and a pointer moving diagonally toward the dropdown's right
+   portion crosses it (confirmed by tracing exact pointer coordinates: at
+   that gap, elementFromPoint returns the bare <nav>, not this trigger or
+   the dropdown) — closing the menu before the pointer arrives. This
+   invisible bridge, a generated box that is part of .navGroup's own subtree
+   (so hovering it keeps .navGroup "hovered" the same way hovering the real
+   dropdown does), fills exactly that gap and nothing more: it stops at the
+   next nav item's own edge, so it can never sit on top of — or steal
+   hover/clicks from — a sibling nav link. */
+.navGroup::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 100%;
+  width: var(--nav-gap);
+  height: 100%;
+}
+
 /* A dropdown-only trigger — styled as a nav link but it's a <button>, since
    there is no parent route to navigate to. */
 .navGroupButton {
@@ -96,19 +121,34 @@
 }
 
 /* Anchored to the parent's left edge (not centre) so the last group's menu
-   can never spill past the viewport's right edge and cause page overflow. */
+   can never spill past the viewport's right edge and cause page overflow.
+   `top: 100%` is deliberately flush against the trigger's own box, with NO
+   gap: .navGroup's rendered height is only the button's height (an
+   absolutely-positioned child never contributes to its container's flow
+   height), so a `top: calc(100% + Npx)` offset used to leave an Npx band
+   that belonged to neither the button nor the dropdown. Moving the pointer
+   from the button toward the list crossed that dead band, which fired
+   mouseleave on .navGroup (see onHoverClose in HeaderClient.js) and closed
+   the menu before the pointer ever reached it — the exact "dropdown
+   disappears while moving toward the children" bug. Flush positioning
+   means the dropdown's box begins exactly where the button's ends, so the
+   pointer is always over one of the two the whole way down; the visual
+   breathing room above the first link comes from this box's own top
+   padding (below), not from external position offset, so it can never
+   reopen a dead zone. */
 .navDropdown {
   list-style: none;
   margin: 0;
   padding: 8px 0;
   position: absolute;
-  top: calc(100% + 8px);
+  top: 100%;
   left: 0;
   min-width: 190px;
   max-width: calc(100vw - 24px);
   background: var(--enb-bg);
   border: 1px solid var(--enb-footer-bg);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  pointer-events: auto;
   z-index: 30;
 }
 
@@ -254,7 +294,7 @@
   }
 
   .nav {
-    column-gap: 14px;
+    --nav-gap: 14px;
   }
 
   .navLink {
@@ -318,6 +358,12 @@
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
+  }
+
+  /* The desktop hover-gap bridge is meaningless here (mobile opens on tap,
+     not hover, and the column layout has no side-by-side gap to bridge). */
+  .navGroup::after {
+    content: none;
   }
 
   .navGroupButton {

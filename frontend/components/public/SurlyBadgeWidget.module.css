@@ -1,0 +1,166 @@
+/* Sur.ly "Brilliantly SAFE!" site-safety badge — the live explorenbite.com
+   sidebar's third badge widget (`#surly-badge`, `surly-badge_white-blue`
+   variant). Sur.ly's own stylesheet
+   (https://cdn.sur.ly/widget-awards/css/surly-badges.min.css) trimmed to the
+   single colour variant the live site uses and inlined here, so the public
+   site pulls nothing from cdn.sur.ly at runtime. The bracket outline is
+   Sur.ly's own inline-SVG background, kept verbatim. Raleway/Oswald (the
+   badge's own faces, never loaded by this site) fall back to the site body
+   font — same honest-stand-in rule the Facebook/Twitter widgets use. */
+.badge {
+  font-family: Raleway, var(--font-body), sans-serif;
+  font-weight: 400;
+  width: 134px;
+  height: 164px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top center;
+  box-sizing: content-box;
+  padding: 8px 15px 0;
+  margin: 0 auto;
+  color: #2e2e2e;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 164 150'%3E%3Cpath style='fill:none;stroke:%232e2e2e;stroke-width:2;stroke-miterlimit:10;' d='M16.05,22.74c0-7.61,6.16-13.76,13.76-13.76 M16.05,22.74v127.15 M29.02,140.85l-12.52,8.2 M28.47,141.01 h105.78 M134.25,141.01c7.61,0,13.76-6.16,13.76-13.76 M148.01,21.03v106.22 M29.81,8.97h106.2'/%3E%3Cpath style='stroke:%2302a7fd;stroke-width:2;stroke-miterlimit:10;' d='M148.01,18.02V-0.02 M138.99,9h18.04'/%3E%3C/svg%3E");
+}
+
+.badge :global(p) {
+  margin: 0;
+}
+
+.badge :global(.surly-badge__header) {
+  position: relative;
+  z-index: 10;
+  padding: 12px 6px 0;
+}
+
+.badge :global(.surly-badge__header-title) {
+  font-family: Raleway, var(--font-body), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1;
+  text-align: center;
+  padding: 0;
+  margin: 0 0 6px;
+  color: #2e2e2e;
+}
+
+.badge :global(.surly-badge__header-text) {
+  font-size: 40px;
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 33px;
+  padding: 0;
+  margin: 0 0 4px;
+  color: #02a7fd;
+}
+
+.badge :global(.surly-badge__tag) {
+  height: 18px;
+  width: calc(100% + 26px);
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+  padding: 0 2px;
+  background-color: #02a7fd;
+  border-bottom: 1px solid #707070;
+}
+
+.badge :global(.surly-badge__tag-text) {
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+  text-overflow: ellipsis;
+  line-height: initial;
+  text-decoration: none;
+  padding: 0;
+  color: #fff;
+}
+
+.badge :global(.surly-badge__tag)::before,
+.badge :global(.surly-badge__tag)::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.badge :global(.surly-badge__tag)::before {
+  border-width: 0 15px 15px 0;
+  left: 0;
+  bottom: -15px;
+  border-color: transparent #3b7696 transparent transparent;
+}
+
+.badge :global(.surly-badge__tag)::after {
+  border-width: 15px 0 0 15px;
+  right: 0;
+  top: -15px;
+  border-color: transparent transparent transparent #3b7696;
+}
+
+.badge :global(.surly-badge__footer) {
+  position: relative;
+  z-index: 10;
+  white-space: nowrap;
+  width: 100%;
+  padding-top: 6px;
+}
+
+.badge :global(.surly-badge__footer-title) {
+  font-family: Oswald, var(--font-body), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  /* Sur.ly's own CSS keeps this to one nowrap/ellipsis line because it
+     loads the condensed Oswald face; this site doesn't load Oswald, so with
+     the wider fallback "Content & Links" is allowed to wrap rather than
+     truncate to "Content & Li...". */
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 0 4px;
+  margin: 0 0 5px;
+  color: #2e2e2e;
+}
+
+.badge :global(.surly-badge__footer-text) {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  color: #2e2e2e;
+}
+
+.badge :global(.surly-badge__footer-link) {
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  line-height: initial;
+  display: inline-block;
+  color: #02a7fd;
+}
+
+.badge :global(.surly-badge__date) {
+  font-size: 16px;
+  font-weight: 600;
+  flex-grow: 1;
+  display: flex;
+  align-items: flex-end;
+  line-height: 1;
+  text-align: center;
+}

@@ -1,87 +1,91 @@
-// Primary-navigation grouping — applied at render time, in the frontend only.
+// Primary-navigation order + grouping — applied at render time, in the
+// frontend only.
 //
 // The nav menu is CMS/DB-driven (GET /api/menu → menu_items table) and flat:
-// prisma/schema.prisma locks "Menu items are flat (no parent_id)", so a
-// parent → child hierarchy cannot be expressed as menu_items records without
-// a schema change. The navigation-restructure requirement is grouping only
-// (no schema changes, no content/record changes), so the two parent sections
-// below are layered on top of the existing flat menu by buildNavTree(): it
-// nests the matching existing menu items under a dropdown-only parent and
-// leaves every menu_items row — its label, URL, target and order — untouched.
-// Deleting a group from this list restores the flat menu exactly.
+// prisma/schema.prisma locks "Menu items are flat (no parent_id)", and each
+// row's own sortOrder is admin-editable data, not a hierarchy. The required
+// public nav is a fixed order (Home, Travel, Bites…, More About Me, Work
+// With Me, About Us, Contact) that does not match menu_items.sortOrder and
+// pulls one further-down item ("Poetry Corner") into a dropdown between two
+// other top-level items — neither a schema change nor reordering the DB rows
+// themselves is needed (or wanted — the menu_items table is left completely
+// untouched) to get there. NAV_LAYOUT below is the single source of truth
+// for the *visible* order and grouping; buildNavTree() slots each existing
+// menu item (matched by its already-resolved href, not by stored label or
+// id — stable regardless of how an item is named in the admin Menu manager)
+// into that layout. A menu item that doesn't appear in NAV_LAYOUT still
+// renders — appended at the end, in its normal menu order — so nothing an
+// admin adds later silently disappears from the public nav.
 //
-// Children are matched by their already-resolved href (resolveMenuItemHref in
-// lib/publicApi.js), not by stored label or id, so the grouping is stable
-// regardless of how the menu item is named in the admin Menu manager. Each
-// parent is a dropdown only: it has no page of its own and is never a link
-// (there is no parent route to point at, and inventing one is out of scope).
-export const NAV_GROUPS = [
+// Each group is a dropdown only: it has no page of its own and is never a
+// link (there is no parent route to point at, and inventing one is out of
+// scope).
+const NAV_LAYOUT = [
+  { type: "link", href: "/category/home" },
   {
+    type: "group",
     label: "Travel",
     children: [
       { href: "/category/must-visit", label: "Must Visit" },
       { href: "/category/travel-tips", label: "Travel Tips" },
     ],
   },
+  { type: "link", href: "/category/bites-from-corners-of-the-world" },
   {
+    type: "group",
     label: "More About Me",
     children: [
       { href: "/books", label: "My Books" },
       { href: "/awards", label: "Mentions & Accolades" },
+      { href: "/category/poetry-corner", label: "Poetry Corner" },
     ],
   },
+  { type: "link", href: "/pages/work-with-me" },
+  { type: "link", href: "/pages/about-us" },
+  { type: "link", href: "/pages/contact" },
 ];
 
 // Turns the flat [{ id, label, href }] nav list into a mixed list of leaves
-// and groups:
+// and groups, in NAV_LAYOUT's exact order:
 //   { type: "link", id, label, href }
 //   { type: "group", label, children: [{ id, label, href }, ...] }
 //
-// A group takes the slot of its *first* matched child; every other matched
-// child is pulled out of the flat list and moved under that group. Items that
-// match no group keep their exact original position and order, and a group
-// with no matched children is dropped entirely (so a missing/renamed menu
-// item can never leave an empty parent behind).
-export function buildNavTree(navItems, groups = NAV_GROUPS) {
-  const groupForHref = new Map();
-  const childConfigForHref = new Map();
-  groups.forEach((group) => {
-    group.children.forEach((child) => {
-      groupForHref.set(child.href, group);
-      childConfigForHref.set(child.href, child);
-    });
-  });
+// Plain links keep the menu item's own stored label (never overridden, so an
+// admin's exact wording/casing for "Bites from corners of the world",
+// "Work with me", "About us", "Contact" etc. is preserved) — only dropdown
+// child labels are normalized to the exact required text. A group with zero
+// matched children is dropped entirely, and a layout slot whose menu item
+// doesn't currently exist is skipped — a missing/renamed menu item can never
+// produce a blank slot or an empty parent.
+export function buildNavTree(navItems, layout = NAV_LAYOUT) {
+  const byHref = new Map(navItems.map((item) => [item.href, item]));
+  const consumed = new Set();
 
-  const matchedByGroup = new Map(); // group -> [{ id, label, href }]
-  const tree = [];
+  const tree = layout
+    .map((slot) => {
+      if (slot.type === "link") {
+        const item = byHref.get(slot.href);
+        if (!item) return null;
+        consumed.add(slot.href);
+        return { type: "link", id: item.id, label: item.label, href: item.href };
+      }
 
-  navItems.forEach((item) => {
-    const group = groupForHref.get(item.href);
-    if (!group) {
-      tree.push({ type: "link", id: item.id, label: item.label, href: item.href });
-      return;
-    }
-    if (!matchedByGroup.has(group)) {
-      matchedByGroup.set(group, []);
-      tree.push({ type: "groupSlot", group });
-    }
-    const childConfig = childConfigForHref.get(item.href);
-    matchedByGroup.get(group).push({
-      id: item.id,
-      href: item.href,
-      label: childConfig?.label ?? item.label,
-    });
-  });
-
-  return tree
-    .map((node) => {
-      if (node.type !== "groupSlot") return node;
-      const matched = matchedByGroup.get(node.group) ?? [];
-      // Keep the config's child order, not the order they appeared in the menu.
-      const children = node.group.children
-        .map((child) => matched.find((m) => m.href === child.href))
+      const children = slot.children
+        .map((child) => {
+          const item = byHref.get(child.href);
+          if (!item) return null;
+          consumed.add(child.href);
+          return { id: item.id, href: item.href, label: child.label };
+        })
         .filter(Boolean);
-      return { type: "group", label: node.group.label, children };
+
+      return children.length > 0 ? { type: "group", label: slot.label, children } : null;
     })
-    .filter((node) => node.type !== "group" || node.children.length > 0);
+    .filter(Boolean);
+
+  const leftover = navItems
+    .filter((item) => !consumed.has(item.href))
+    .map((item) => ({ type: "link", id: item.id, label: item.label, href: item.href }));
+
+  return [...tree, ...leftover];
 }

@@ -3,7 +3,24 @@
    `.sidebar-right` exactly: sidebar is a 307px box, and the gutter between
    it and the main column is the sidebar's own 37px left padding (not a flex
    gap), so main content actually gets the full remaining width. Collapses
-   to a single column below 980px, sidebar moving below the main content. */
+   to a single column below 980px, sidebar moving below the main content.
+
+   Partial sticky sidebar: the sidebar column itself is NOT sticky — Recent
+   Posts / Search / Recommended / social / subscribe, and the award heading +
+   trophy photo, all scroll away with the page normally. Only the trailing
+   three-badge block (Tripoto / IndiBlogger / Sur.ly) sticks, and that rule
+   lives on `.stickyBadgeBlock` in Sidebar.module.css, not here.
+   The one thing this file does for it: `.sidebar` is a `column` flexbox
+   with `align-self: stretch` (not `flex-start`), so the `<aside>` grows to
+   the full height of `.columns` (i.e. the main column's height). Its inner
+   wrapper fills that height too (`.sidebarInner { flex: 1 }`), which is what
+   gives the sticky block real travel room — it can stay pinned until the
+   main column ends, then release. Sticky is inherently bounded by that wrapper, so it
+   can never ride down over the footer. `<body>` stays `overflow-x: clip`
+   (not `hidden`) in globals.css: `hidden` would make <body> a scrollport
+   that captures the stick and breaks `position: sticky` for the block
+   (verified in-browser). Below 980px `.columns` is a single column and the
+   sticky block is reset to static (see Sidebar.module.css media query). */
 .container {
   max-width: var(--enb-content-width);
   margin: 0 auto;
@@ -27,6 +44,12 @@
   width: var(--enb-sidebar-width);
   padding-left: var(--enb-sidebar-gutter);
   box-sizing: border-box;
+  /* Stretch to the full height of `.columns` so the inner wrapper (and the
+     sticky badge block inside it) has room to travel. The column has no
+     background/border, so the extra height below the widgets is invisible. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
 }
 
 @media screen and (max-width: 980px) {
@@ -44,5 +67,8 @@
     margin: 0 auto;
     padding-left: 0;
     flex: none;
+    /* Mobile: normal stacked flow — no stretch, no sticky block (that reset
+       lives in Sidebar.module.css). */
+    align-self: center;
   }
 }

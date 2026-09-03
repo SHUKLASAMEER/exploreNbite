@@ -56,19 +56,60 @@ function NavLink({ item, isActive, className }) {
   );
 }
 
+// True when focus landed on `el` from the keyboard (Tab), not a pointer —
+// so focusing a trigger with the mouse doesn't fight the click handler, but
+// tabbing to it reveals its submenu. `:focus-visible` is exactly this
+// signal; the try/catch keeps very old engines (no `:focus-visible`)
+// keyboard-accessible by falling back to "treat as keyboard".
+function isKeyboardFocus(el) {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 // A parent nav item: a dropdown-only trigger (never a link — there is no
-// parent route) plus its list of child links. Open state is controlled by
-// the parent HeaderClient so only one group is open at a time; hover opens
-// it on pointer devices, click/tap toggles it everywhere.
-function NavGroup({ node, pathname, isOpen, onToggle, onHoverOpen, onHoverClose }) {
+// parent route) plus its list of child links, both wrapped in ONE element so
+// there's a single continuous hover/focus region spanning trigger + submenu
+// (see the .navDropdown / .navGroup::after comments in Header.module.css for
+// why a flush, gap-free dropdown position and a gap-filling bridge — not
+// just this shared wrapper — are what actually keep the menu open while the
+// pointer travels from the trigger into it). Open state is controlled by the
+// parent HeaderClient so only one group is open at a time:
+//  - pointer: hover opens (pointer-capable devices only), leaving closes;
+//  - keyboard: Tab onto the trigger opens it, Tab through the children keeps
+//    it open, Tab/blur past the wrapper closes it;
+//  - click/tap: toggles (the touch path, and a mouse fallback).
+function NavGroup({ node, pathname, isOpen, onToggle, onHoverOpen, onHoverClose, onFocusOpen, onFocusClose }) {
+  const wrapperRef = useRef(null);
   const hasActiveChild = node.children.some((child) => isActivePath(pathname, child.href));
   const buttonClasses = `${styles.navLink} ${styles.navGroupButton} ${
     hasActiveChild ? styles.navLinkActive : ""
   }`.trim();
   const panelId = `nav-group-${node.label.replace(/\s+/g, "-").toLowerCase()}`;
 
+  function handleFocus(event) {
+    if (isKeyboardFocus(event.target)) onFocusOpen();
+  }
+
+  // Focus moving between the trigger and its own child links must never close
+  // the menu — only a blur landing outside this wrapper should.
+  function handleBlur(event) {
+    if (!wrapperRef.current || !wrapperRef.current.contains(event.relatedTarget)) {
+      onFocusClose();
+    }
+  }
+
   return (
-    <div className={styles.navGroup} onMouseEnter={onHoverOpen} onMouseLeave={onHoverClose}>
+    <div
+      ref={wrapperRef}
+      className={styles.navGroup}
+      onMouseEnter={onHoverOpen}
+      onMouseLeave={onHoverClose}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    >
       <button
         type="button"
         className={buttonClasses}
@@ -194,6 +235,8 @@ export default function HeaderClient({ siteTitle, tagline, heroImageUrl, navTree
                     onHoverClose={() => {
                       if (canHover.current) setOpenGroup((prev) => (prev === node.label ? null : prev));
                     }}
+                    onFocusOpen={() => setOpenGroup(node.label)}
+                    onFocusClose={() => setOpenGroup((prev) => (prev === node.label ? null : prev))}
                   />
                 ) : (
                   <NavLink
