@@ -1,97 +1,57 @@
 "use client";
 
-import { useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+// Raw HTML source editor for admin-authored post/page content.
+//
+// value/onChange contract: `value` is an HTML string and is stored verbatim
+// (matches Post.content / Page.content in the schema — a plain LongText
+// column, no JSON/markdown conversion). The admin writes or pastes complete
+// HTML here; existing stored HTML loads straight back into the textarea
+// unchanged. Server-side sanitization in the post/page services
+// (backend/src/utils/sanitizeHtml.js) remains the security boundary — the
+// editor intentionally does not filter input.
 
-const toolbarButtonStyle = (active) => ({
-  padding: "0.3rem 0.6rem",
-  cursor: "pointer",
-  fontWeight: active ? "bold" : "normal",
-  background: active ? "#e0e0e0" : "#fff",
-  border: "1px solid #ccc",
-  borderRadius: "4px",
-});
+const editorStyle = {
+  width: "100%",
+  minHeight: "300px",
+  resize: "vertical",
+  fontFamily:
+    "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
+  fontSize: "0.85rem",
+  lineHeight: 1.6,
+  padding: "0.85rem",
+  border: "1px solid var(--admin-border-strong)",
+  borderRadius: "var(--admin-radius-sm)",
+  background: "var(--admin-surface)",
+  color: "var(--admin-text)",
+  whiteSpace: "pre-wrap",
+  tabSize: 2,
+  MozTabSize: 2,
+};
 
-// value/onChange contract: value is an HTML string (matches Post.content in
-// the schema, a plain LongText column — no JSON/markdown conversion).
+const hintStyle = {
+  fontSize: "0.78rem",
+  color: "var(--admin-text-muted)",
+  margin: "0.4rem 0 0",
+};
+
 export default function RichTextEditor({ value, onChange }) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: value || "",
-    // Next.js renders this on the server first; without this the editor
-    // tries to render immediately during SSR and mismatches on hydration.
-    immediatelyRender: false,
-    onUpdate: ({ editor: currentEditor }) => {
-      onChange(currentEditor.getHTML());
-    },
-  });
-
-  // Post data loads asynchronously (fetched after mount in edit mode), so
-  // the editor is created empty and needs to be resynced once the real
-  // content arrives. emitUpdate: false stops this from re-triggering
-  // onChange and fighting the admin's own typing once they start editing.
-  useEffect(() => {
-    if (!editor) return;
-    if (value !== undefined && value !== editor.getHTML()) {
-      editor.commands.setContent(value || "", { emitUpdate: false });
-    }
-  }, [value, editor]);
-
-  if (!editor) {
-    return <p>Loading editor…</p>;
-  }
-
   return (
-    <div style={{ border: "1px solid #ccc", borderRadius: "6px" }}>
-      <div
-        style={{
-          display: "flex",
-          gap: "0.3rem",
-          flexWrap: "wrap",
-          padding: "0.4rem",
-          borderBottom: "1px solid #eee",
-        }}
-      >
-        <button type="button" style={toolbarButtonStyle(editor.isActive("bold"))} onClick={() => editor.chain().focus().toggleBold().run()}>
-          Bold
-        </button>
-        <button type="button" style={toolbarButtonStyle(editor.isActive("italic"))} onClick={() => editor.chain().focus().toggleItalic().run()}>
-          Italic
-        </button>
-        <button
-          type="button"
-          style={toolbarButtonStyle(editor.isActive("heading", { level: 2 }))}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          H2
-        </button>
-        <button
-          type="button"
-          style={toolbarButtonStyle(editor.isActive("heading", { level: 3 }))}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          H3
-        </button>
-        <button type="button" style={toolbarButtonStyle(editor.isActive("bulletList"))} onClick={() => editor.chain().focus().toggleBulletList().run()}>
-          • List
-        </button>
-        <button type="button" style={toolbarButtonStyle(editor.isActive("orderedList"))} onClick={() => editor.chain().focus().toggleOrderedList().run()}>
-          1. List
-        </button>
-        <button type="button" style={toolbarButtonStyle(editor.isActive("blockquote"))} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
-          Quote
-        </button>
-        <button type="button" style={toolbarButtonStyle(false)} onClick={() => editor.chain().focus().undo().run()}>
-          Undo
-        </button>
-        <button type="button" style={toolbarButtonStyle(false)} onClick={() => editor.chain().focus().redo().run()}>
-          Redo
-        </button>
-      </div>
-      <div style={{ padding: "0.75rem", minHeight: "220px" }}>
-        <EditorContent editor={editor} />
-      </div>
+    <div>
+      <textarea
+        aria-label="HTML content"
+        style={editorStyle}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        spellCheck={false}
+        autoCapitalize="off"
+        autoCorrect="off"
+      />
+      <p style={hintStyle}>
+        Write or paste HTML content here. Tags such as &lt;h2&gt;, &lt;h3&gt;,
+        &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;/&lt;li&gt;,
+        &lt;ol&gt;/&lt;li&gt;, &lt;blockquote&gt; and links are kept and stored
+        as HTML. Dangerous markup is stripped by the server on save.
+      </p>
     </div>
   );
 }

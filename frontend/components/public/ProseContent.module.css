@@ -42,10 +42,36 @@
   color: var(--enb-accent-hover);
 }
 
+/* Article-body images: always shown in full, at their natural aspect ratio.
+   `width: auto` + `height: auto` neutralise any width/height attributes or
+   inline dimensions that come in with pasted / imported HTML (which would
+   otherwise stretch or distort the image), while `max-width: 100%` keeps it
+   inside the content column and stops horizontal overflow on mobile. No
+   `object-fit` and no fixed height here — that would crop. */
 .prose :global(img) {
-  max-width: 100%;
+  display: block;
+  width: auto;
   height: auto;
+  max-width: 100%;
   margin: 15px 0;
+}
+
+/* Figure/caption wrappers (common in imported WordPress content) must also
+   stay within the content width and not carry the UA's default 40px side
+   margins, which would push wide images off-screen on small viewports. */
+.prose :global(figure) {
+  max-width: 100%;
+  margin: 15px 0;
+}
+
+.prose :global(figure img) {
+  margin: 0;
+}
+
+.prose :global(figcaption) {
+  font-size: 13px;
+  color: var(--enb-meta);
+  margin-top: 6px;
 }
 
 .prose :global(blockquote) {

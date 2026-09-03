@@ -79,6 +79,25 @@
   align-items: center;
 }
 
+.tagGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tagGroupTitle {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-text);
+  margin: 0;
+}
+
+.tagError {
+  font-size: 0.78rem;
+  color: var(--admin-danger);
+  margin: 0;
+}
+
 .tagChip {
   display: inline-flex;
   align-items: center;

@@ -1,15 +1,15 @@
+/* Featured image on the single-post page: shown complete, at its natural
+   aspect ratio. No fixed height and no object-fit — the image sets its own
+   height from its intrinsic proportions and just scales down to the content
+   column width. (Listing thumbnails elsewhere still crop on purpose.) */
 .media {
-  height: 360px;
-  overflow: hidden;
   margin-bottom: 25px;
-  background: var(--enb-footer-bg);
 }
 
 .media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* Left-aligned, no centering — matches reference/exploreNbite UI/post.html,
@@ -244,10 +244,6 @@
 }
 
 @media screen and (max-width: 480px) {
-  .media {
-    height: 220px;
-  }
-
   .title {
     font-size: 28px;
     line-height: 33px;

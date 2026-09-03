@@ -131,6 +131,28 @@ function parsePostInput(body, mode) {
 }
 
 /**
+ * Normalizes a single raw tag name into `{ name, slug }`, or returns null if
+ * it's empty / slug-less after cleaning. Throws ValidationError for a
+ * non-string or an over-long name. Shared by resolveTagIds (post save) and
+ * the standalone tag-create endpoint (tag.service.create) so both apply the
+ * exact same rules — trim, collapse internal whitespace, slug by the shared
+ * slugify(), 80-char cap.
+ */
+function parseTagName(value) {
+  if (typeof value !== "string") {
+    throw new ValidationError("Each tag must be a text value.");
+  }
+  const name = value.trim().replace(/\s+/g, " ");
+  if (!name) return null;
+  if (name.length > TAG_NAME_MAX) {
+    throw new ValidationError(`Tag names must be ${TAG_NAME_MAX} characters or fewer.`);
+  }
+  const slug = slugify(name);
+  if (!slug) return null;
+  return { name, slug };
+}
+
+/**
  * Takes the raw `tags` field from a request body — an array of tag name
  * strings, e.g. ["Travel", "gujarat"] — and resolves it to an array of tag
  * ids, creating any tag that doesn't exist yet. Existing tags are matched
@@ -147,18 +169,10 @@ async function resolveTagIds(prisma, rawTags) {
   const seenSlugs = new Set();
   const cleaned = [];
   for (const value of rawTags) {
-    if (typeof value !== "string") {
-      throw new ValidationError("Each tag must be a text value.");
-    }
-    const name = value.trim();
-    if (!name) continue;
-    if (name.length > TAG_NAME_MAX) {
-      throw new ValidationError(`Tag names must be ${TAG_NAME_MAX} characters or fewer.`);
-    }
-    const slug = slugify(name);
-    if (!slug || seenSlugs.has(slug)) continue;
-    seenSlugs.add(slug);
-    cleaned.push({ name, slug });
+    const parsed = parseTagName(value);
+    if (!parsed || seenSlugs.has(parsed.slug)) continue;
+    seenSlugs.add(parsed.slug);
+    cleaned.push(parsed);
   }
 
   const tagIds = [];
@@ -213,4 +227,4 @@ async function resolveCategoryIds(prisma, rawCategoryIds, primaryCategoryId) {
   return ids;
 }
 
-module.exports = { parsePostInput, resolveTagIds, resolveCategoryIds, VALID_STATUSES };
+module.exports = { parsePostInput, parseTagName, resolveTagIds, resolveCategoryIds, VALID_STATUSES };

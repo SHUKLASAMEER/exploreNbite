@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Plus, ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { buildTagContext, rankTags, tagSlug } from "@/lib/rankTags";
+import { generateTagCandidates } from "@/lib/generateTagCandidates";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import PageHeader from "@/components/admin/ui/PageHeader";
 import Button from "@/components/admin/ui/Button";
@@ -20,6 +22,16 @@ async function parseJsonSafe(res) {
   } catch {
     return null;
   }
+}
+
+// Mirrors the backend's tag-name rules (utils/validation/posts.js): trim,
+// collapse internal whitespace, cap length. The backend re-validates and is
+// the real boundary — this just keeps the UI honest.
+const TAG_NAME_MAX = 80;
+const NEW_TAG_SUGGESTION_LIMIT = 8;
+
+function normalizeTagName(raw) {
+  return String(raw ?? "").trim().replace(/\s+/g, " ");
 }
 
 function toDatetimeLocalValue(isoString) {
@@ -60,6 +72,66 @@ export default function PostForm({ mode, postId }) {
 
   const [form, setForm] = useState(emptyForm);
   const [tagInput, setTagInput] = useState("");
+
+  // Progressive reveal for the (potentially hundreds of) existing tags:
+  // start at 8, then +30 per "See More" click. Selected tags are shown as
+  // chips above and are excluded from this list, so they never get hidden
+  // by the slice.
+  const TAGS_INITIAL = 8;
+  const TAGS_STEP = 30;
+  const [visibleTagCount, setVisibleTagCount] = useState(TAGS_INITIAL);
+
+  // Explicit-action tag creation state (the "Create" buttons + manual input).
+  const [tagBusy, setTagBusy] = useState(false);
+  const [tagError, setTagError] = useState("");
+
+  // Debounced raw snapshot of the fields that drive both tag features
+  // (relevance ranking of existing tags + new-tag candidate generation).
+  // Debouncing keeps this work off the typing hot path; no network request
+  // is involved — tags are fetched once, in the loader below.
+  const [tagContextInput, setTagContextInput] = useState({ title: "", description: "", content: "" });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTagContextInput({
+        title: form.title,
+        description: form.shortDescription,
+        content: form.content,
+      });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [form.title, form.shortDescription, form.content]);
+
+  const tagContext = useMemo(() => buildTagContext(tagContextInput), [tagContextInput]);
+  const hasTagContext = Boolean(tagContext.title || tagContext.description || tagContext.content);
+
+  // Slugs already covered elsewhere — every existing DB tag and every
+  // currently-selected tag — so neither the ranked list nor the generated
+  // candidates ever duplicate them.
+  const selectedSlugs = useMemo(
+    () => new Set(form.tags.map((name) => tagSlug(name))),
+    [form.tags]
+  );
+  const existingSlugs = useMemo(
+    () => new Set(allTags.map((t) => tagSlug(t.name))),
+    [allTags]
+  );
+
+  // Existing tags not already selected, ordered by relevance to tagContext
+  // (falls back to the API's name-asc order when there's no context yet).
+  const suggestedTags = useMemo(() => {
+    const available = allTags.filter((t) => !selectedSlugs.has(tagSlug(t.name)));
+    return rankTags(available, tagContext);
+  }, [allTags, selectedSlugs, tagContext]);
+
+  // Deterministic, client-side NEW-tag candidates from the post context.
+  // These are only strings until the admin clicks "Create".
+  const newTagCandidates = useMemo(() => {
+    const exclude = new Set([...existingSlugs, ...selectedSlugs]);
+    return generateTagCandidates(tagContextInput, {
+      excludeSlugs: exclude,
+      limit: NEW_TAG_SUGGESTION_LIMIT,
+    });
+  }, [tagContextInput, existingSlugs, selectedSlugs]);
 
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -135,29 +207,82 @@ export default function PostForm({ mode, postId }) {
     };
   }, [isEditing, postId]);
 
-  function addTag(rawName) {
-    const name = rawName.trim();
-    if (!name) return;
-    // Simple case-insensitive check for the UI hint only — the backend's
-    // slug-based matching (utils/validation/posts.js#resolveTagIds) is what
-    // actually prevents duplicate tags; this doesn't need to replicate that
-    // exact algorithm client-side.
-    const key = name.toLowerCase();
+  function selectTagByName(name) {
     setForm((prev) => {
-      if (prev.tags.some((t) => t.toLowerCase() === key)) return prev;
+      if (prev.tags.some((t) => tagSlug(t) === tagSlug(name))) return prev;
       return { ...prev, tags: [...prev.tags, name] };
     });
-    setTagInput("");
   }
 
   function removeTag(name) {
     setForm((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== name) }));
   }
 
+  // Select an existing tag if an equivalent one is already loaded (matched
+  // by slug, case/whitespace-insensitive) — otherwise create it through the
+  // existing admin tag API and select the real record it returns. Only ever
+  // called from an explicit admin action (a suggestion's "Create" button or
+  // the manual "Add Tag" control); never on typing or context changes.
+  async function selectOrCreateTag(rawName) {
+    const name = normalizeTagName(rawName);
+    if (!name) {
+      setTagError("Enter a tag name.");
+      return false;
+    }
+    if (name.length > TAG_NAME_MAX) {
+      setTagError(`Tag names must be ${TAG_NAME_MAX} characters or fewer.`);
+      return false;
+    }
+    const slug = tagSlug(name);
+    setTagError("");
+
+    if (form.tags.some((t) => tagSlug(t) === slug)) return true; // already selected
+
+    const existing = allTags.find((t) => tagSlug(t.name) === slug);
+    if (existing) {
+      selectTagByName(existing.name);
+      return true;
+    }
+
+    setTagBusy(true);
+    try {
+      const res = await apiFetch("/api/admin/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await parseJsonSafe(res);
+      if (!res.ok) {
+        setTagError(data?.error?.message ?? "Could not create this tag.");
+        return false;
+      }
+      const created = data?.tag;
+      if (!created) {
+        setTagError("Could not create this tag.");
+        return false;
+      }
+      setAllTags((prev) =>
+        prev.some((t) => t.id === created.id) ? prev : [...prev, created]
+      );
+      selectTagByName(created.name);
+      return true;
+    } catch {
+      setTagError("Something went wrong creating the tag.");
+      return false;
+    } finally {
+      setTagBusy(false);
+    }
+  }
+
+  async function handleAddManualTag() {
+    const ok = await selectOrCreateTag(tagInput);
+    if (ok) setTagInput("");
+  }
+
   function handleTagInputKeyDown(event) {
-    if (event.key === "Enter" || event.key === ",") {
+    if (event.key === "Enter") {
       event.preventDefault();
-      addTag(tagInput);
+      handleAddManualTag();
     }
   }
 
@@ -219,9 +344,8 @@ export default function PostForm({ mode, postId }) {
     return <ErrorState title="Couldn't load this form" description={loadError} />;
   }
 
-  const suggestedTags = allTags.filter(
-    (t) => !form.tags.some((name) => name.toLowerCase() === t.name.toLowerCase())
-  );
+  const visibleSuggestedTags = suggestedTags.slice(0, visibleTagCount);
+  const hasMoreTags = visibleTagCount < suggestedTags.length;
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -349,47 +473,98 @@ export default function PostForm({ mode, postId }) {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Tags</h2>
 
-        <div className={styles.tagList}>
-          {form.tags.length === 0 ? <em className={styles.hintInline}>No tags yet.</em> : null}
-          {form.tags.map((name) => (
-            <span key={name} className={styles.tagChip}>
-              {name}
-              <button
-                type="button"
-                onClick={() => removeTag(name)}
-                aria-label={`Remove tag ${name}`}
-                className={styles.tagRemove}
-              >
-                <X size={12} strokeWidth={2.5} />
-              </button>
-            </span>
-          ))}
+        <div className={styles.tagGroup}>
+          <p className={styles.tagGroupTitle}>Selected tags</p>
+          <div className={styles.tagList}>
+            {form.tags.length === 0 ? <em className={styles.hintInline}>No tags selected yet.</em> : null}
+            {form.tags.map((name) => (
+              <span key={name} className={styles.tagChip}>
+                {name}
+                <button
+                  type="button"
+                  onClick={() => removeTag(name)}
+                  aria-label={`Remove tag ${name}`}
+                  className={styles.tagRemove}
+                >
+                  <X size={12} strokeWidth={2.5} />
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
-        <FormField
-          label="Add a tag"
-          htmlFor="post-tag-input"
-          placeholder="Type a tag and press Enter"
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={handleTagInputKeyDown}
-        />
-        <Button type="button" variant="secondary" size="sm" icon={Plus} onClick={() => addTag(tagInput)}>
-          Add Tag
-        </Button>
-
         {suggestedTags.length > 0 ? (
-          <div>
-            <p className={styles.hintInline}>Existing tags:</p>
+          <div className={styles.tagGroup}>
+            <p className={styles.tagGroupTitle}>Relevant existing tags</p>
+            <p className={styles.hintInline}>
+              {hasTagContext
+                ? "Existing tags from the library, ranked by relevance to this post's title, description and content."
+                : "Existing tags from the library. Add a title, description or content to rank these by relevance."}
+            </p>
             <div className={styles.tagList}>
-              {suggestedTags.map((t) => (
-                <Button key={t.id} type="button" variant="ghost" size="sm" icon={Plus} onClick={() => addTag(t.name)}>
+              {visibleSuggestedTags.map((t) => (
+                <Button key={t.id} type="button" variant="ghost" size="sm" icon={Plus} onClick={() => selectTagByName(t.name)}>
                   {t.name}
+                </Button>
+              ))}
+            </div>
+            {hasMoreTags ? (
+              <div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setVisibleTagCount((count) => count + TAGS_STEP)}
+                >
+                  See More
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {newTagCandidates.length > 0 ? (
+          <div className={styles.tagGroup}>
+            <p className={styles.tagGroupTitle}>Suggested new tags</p>
+            <p className={styles.hintInline}>
+              Generated from this post&apos;s details — these don&apos;t exist yet. Click one to create it and add it to this post.
+            </p>
+            <div className={styles.tagList}>
+              {newTagCandidates.map((candidate) => (
+                <Button
+                  key={candidate}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  icon={Plus}
+                  disabled={tagBusy}
+                  onClick={() => selectOrCreateTag(candidate)}
+                >
+                  {candidate}
                 </Button>
               ))}
             </div>
           </div>
         ) : null}
+
+        <div className={styles.tagGroup}>
+          <FormField
+            label="Add a tag"
+            htmlFor="post-tag-input"
+            hint="Type a tag name and press Enter. An existing match is reused; anything new is created when you add it."
+            placeholder="e.g. hidden desert village"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
+            disabled={tagBusy}
+          />
+          <div>
+            <Button type="button" variant="secondary" size="sm" icon={Plus} onClick={handleAddManualTag} disabled={tagBusy}>
+              {tagBusy ? "Adding…" : "Add Tag"}
+            </Button>
+          </div>
+          {tagError ? <p className={styles.tagError}>{tagError}</p> : null}
+        </div>
       </section>
 
       <section className={styles.section}>

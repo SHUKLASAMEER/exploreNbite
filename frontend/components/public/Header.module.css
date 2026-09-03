@@ -1,52 +1,139 @@
-/* White top bar (logo left, social icons right) + photo hero (site title +
-   tagline) + nav bar — matches the live site's actual header exactly
-   (verified against a live screenshot and explorenbite.com's own
-   #top-bar / .entry-header / .header-logo CSS): a plain white utility bar
-   holding the logo and social links, then a full-bleed photo hero with the
-   site title + tagline directly on the image (no overlay/scrim — live has
-   none either), then a separate white nav bar. The old gradient-hero
-   version (with social icons absolutely positioned over the hero) has been
-   replaced.
+/* Single white header row (logo + primary nav + settings-driven social
+   icons, all on one line at desktop widths) directly above a full-bleed
+   photo hero carrying the site title + tagline. The hero is a separate
+   sibling of the header row — nav never sits on top of it.
 
-   The nav is CMS-driven (GET /api/menu, variable length) so `.navRow` is a
-   single flex-wrap container — it reflows to as many visual rows as the
-   configured menu needs, reproducing the live site's "wraps to a second
-   line" look without assuming a fixed split. */
+   Desktop: `.collapse` is `display: contents`, so `.nav` and `.social`
+   are direct flex children of `.headerRow` alongside the logo — one row,
+   no wrap. Below --header-bp the row collapses to a hamburger: `.collapse`
+   becomes a dropdown panel and `.menuToggle` appears. The nav itself is
+   still CMS-driven (GET /api/menu) and its two parent groups
+   ("Travel" / "More About Me") come from lib/navGroups.js. */
 .header {
   background: var(--enb-bg);
-  /* Compact utility bar: padding-block (2px + 2px) + logo height (46px) =
-     50px total — the logo is the tallest child, so it alone sets the bar's
-     content height; the 18px social icons just center within that via
-     .topBar's align-items. Logo height is deliberately close to the bar's
-     full 50px (not an arbitrary number): app/icon.jpeg's own artwork only
-     fills ~76% of its canvas height (trimmed the actual ink and measured
-     it — the rest is real white pixels baked into the JPEG, not a CSS gap),
-     so this is the tightest padding that still leaves the bar looking
-     intentional rather than clipped; it can't be tightened further without
-     either cropping the source image (not allowed) or exceeding the 50px
-     bar. Keep these three numbers in sync if either changes. */
-  --header-logo-height: 46px;
+  --header-logo-height: 44px;
 }
 
-/* --- Top bar --- */
-.topBar {
+/* --- The one white row --- */
+.headerRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 2px 40px;
+  gap: 22px;
+  padding: 10px 28px;
   background: var(--enb-bg);
 }
 
 .logoLink {
   display: block;
+  flex-shrink: 0;
   line-height: 0;
 }
 
+/* Desktop: not a box — nav + social become direct children of .headerRow. */
+.collapse {
+  display: contents;
+}
+
+.nav {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: 18px;
+  min-width: 0;
+}
+
+.navLink {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #000;
+}
+
+.navLink:hover,
+.navLinkActive {
+  color: var(--enb-accent);
+}
+
+.navNotice {
+  font-size: 0.85rem;
+  color: var(--enb-meta);
+}
+
+/* --- Parent dropdown groups ("Travel", "More About Me") --- */
+.navGroup {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* A dropdown-only trigger — styled as a nav link but it's a <button>, since
+   there is no parent route to navigate to. */
+.navGroupButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+.navGroupCaret {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  vertical-align: middle;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+}
+
+/* Anchored to the parent's left edge (not centre) so the last group's menu
+   can never spill past the viewport's right edge and cause page overflow. */
+.navDropdown {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 190px;
+  max-width: calc(100vw - 24px);
+  background: var(--enb-bg);
+  border: 1px solid var(--enb-footer-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  z-index: 30;
+}
+
+.navDropdownLink {
+  display: block;
+  padding: 8px 20px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  color: #000;
+}
+
+.navDropdownLink:hover,
+.navDropdownLink.navLinkActive {
+  color: var(--enb-accent);
+}
+
+/* --- Social icons --- */
 .social {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .socialLink {
@@ -58,7 +145,46 @@
   color: var(--enb-accent);
 }
 
-/* --- Hero --- */
+/* --- Hamburger (mobile/tablet only) --- */
+.menuToggle {
+  display: none;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--enb-footer-bg);
+  border-radius: 4px;
+  background: var(--enb-bg);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuToggleBars,
+.menuToggleBars::before,
+.menuToggleBars::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #000;
+  content: "";
+}
+
+.menuToggleBars {
+  position: relative;
+}
+
+.menuToggleBars::before {
+  position: absolute;
+  top: -6px;
+}
+
+.menuToggleBars::after {
+  position: absolute;
+  top: 6px;
+}
+
+/* --- Hero (unchanged) --- */
 .hero {
   position: relative;
   height: 500px;
@@ -93,43 +219,16 @@
   color: #000;
 }
 
-/* --- Nav bar --- */
-.navBar {
-  background: var(--enb-bg);
-  padding: 22px 20px;
-}
-
-.navRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  column-gap: 36px;
-  row-gap: 12px;
-  max-width: var(--enb-content-width);
-  margin: 0 auto;
-}
-
-.navLink {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #000;
-}
-
-.navLink:hover,
-.navLinkActive {
-  color: var(--enb-accent);
-}
-
-.navNotice {
-  font-size: 0.85rem;
-  color: var(--enb-meta);
-}
-
 /* --- Skeleton (Suspense fallback) --- */
+.skeletonNav {
+  flex: 1 1 auto;
+  height: 16px;
+  max-width: 620px;
+  margin: 0 auto;
+  border-radius: 4px;
+  background: var(--enb-footer-bg, #eee);
+}
+
 .skeletonHero {
   min-height: 460px;
   background: linear-gradient(180deg, #8ea0b8 0%, #eb9e59 35%, #fac13f 55%, #24486b 100%);
@@ -146,58 +245,130 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
-.skeletonNav {
-  padding: 22px 0;
-  display: flex;
-  justify-content: center;
-}
-
-.skeletonNavInner {
-  width: 260px;
-  height: 18px;
-  border-radius: 4px;
-  background: var(--enb-footer-bg, #eee);
-}
-
-@media (max-width: 980px) {
-  .header {
-    /* Same fix, same 42px total (2px + 38px + 2px) — see the desktop rule's
-       comment for why the logo can't visually fill 100% of the bar. */
-    --header-logo-height: 38px;
+/* --- Large but not huge desktop: tighten so 8 items + logo + socials keep
+   fitting one row well below 1366px before the hamburger takes over. --- */
+@media (max-width: 1360px) {
+  .headerRow {
+    gap: 16px;
+    padding: 10px 20px;
   }
 
-  .topBar {
-    padding: 2px 20px;
+  .nav {
+    column-gap: 14px;
+  }
+
+  .navLink {
+    font-size: 12px;
+    letter-spacing: 0.2px;
+  }
+}
+
+/* --- Below this width the one row can't hold everything without shrinking
+   text past readable — switch to the hamburger panel. --- */
+@media (max-width: 1200px) {
+  .header {
+    --header-logo-height: 40px;
+  }
+
+  .menuToggle {
+    display: inline-flex;
+  }
+
+  /* `.collapse` is a real box again: a full-width panel that sits in normal
+     flow below the logo/hamburger row (headerRow wraps), so opening the menu
+     pushes the hero down rather than covering it. Shown only when toggled. */
+  .collapse {
+    display: none;
+    order: 3;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--enb-footer-bg);
+  }
+
+  .collapseOpen {
+    display: flex;
+  }
+
+  .headerRow {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+
+  .nav {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    column-gap: 0;
+    row-gap: 2px;
+  }
+
+  .navLink {
+    display: block;
+    padding: 10px 4px;
+    font-size: 14px;
+    letter-spacing: 0.4px;
+  }
+
+  .navGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .navGroupButton {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 10px 4px;
+  }
+
+  /* Parent groups expand/collapse inline within the panel (no floating). */
+  .navDropdown {
+    position: static;
+    max-width: none;
+    padding: 2px 0 6px 16px;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .navDropdownLink {
+    padding: 8px 4px;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+
+  .social {
+    gap: 18px;
+    padding: 12px 4px 4px;
+    border-top: 1px solid var(--enb-footer-bg);
+    margin-top: 6px;
   }
 
   .hero {
-    height: 290px;
+    height: 300px;
     padding: 0 20px;
   }
 
   .siteTitle {
-    font-size: 45px;
+    font-size: 46px;
     letter-spacing: 1px;
   }
 
   .tagline {
     font-size: 14px;
   }
-
-  .social {
-    gap: 12px;
-  }
-
-  .navRow {
-    column-gap: 20px;
-    row-gap: 10px;
-  }
 }
 
 @media (max-width: 550px) {
   .hero {
     height: auto;
-    padding: 50px 20px;
+    padding: 48px 20px;
   }
 
   .siteTitle {

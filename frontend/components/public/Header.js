@@ -1,5 +1,6 @@
 import { getPublicSettings, getPublicMenu, resolveMenuItemHref } from "@/lib/publicApi";
 import { buildSocialLinks } from "@/lib/socialLinks";
+import { buildNavTree } from "@/lib/navGroups";
 import HeaderClient from "./HeaderClient";
 
 // Server half of the public Header — fetches Settings + Menu (in parallel;
@@ -33,12 +34,17 @@ export default async function Header() {
     .map((item) => ({ id: item.id, label: item.label, href: resolveMenuItemHref(item) }))
     .filter((item) => Boolean(item.href));
 
+  // Flat menu items -> mixed list of leaves + "Travel" / "More About Me"
+  // parent groups (see lib/navGroups.js). Nothing about the underlying
+  // menu_items records changes — this is a render-time regrouping only.
+  const navTree = buildNavTree(navItems);
+
   return (
     <HeaderClient
       siteTitle={settings?.siteTitle ?? "Explore N Bite"}
       tagline={TAGLINE}
       heroImageUrl={HERO_IMAGE_URL}
-      navItems={navItems}
+      navTree={navTree}
       navError={menuError}
       socialLinks={buildSocialLinks(settings)}
     />
