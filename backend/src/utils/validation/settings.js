@@ -18,6 +18,21 @@ function isValidUrl(value) {
   }
 }
 
+// Logo may be an uploaded-media URL (http/https) or a root-relative path
+// like "/uploads/logo.png" — never javascript:/data:/other schemes. Same
+// rule shape as utils/validation/menuItems.js's custom-URL check, so the
+// header only ever renders a safe <img src>.
+function isValidLogoUrl(value) {
+  if (/^\/(?!\/)/.test(value)) {
+    return !/\s/.test(value);
+  }
+  try {
+    return /^https?:$/.test(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function isValidEmail(value) {
   // Same lightweight-but-real check already used in
   // utils/validation/subscribers.js and utils/validation/comments.js.
@@ -64,11 +79,17 @@ function parseSettingsInput(body) {
   }
 
   if (has("logoUrl")) {
-    // Lightweight treatment (trim + max length) — same precedent as every
-    // other image URL field (Book.coverImageUrl, Author.photoUrl, ...).
     const url = typeof input.logoUrl === "string" ? input.logoUrl.trim() : "";
     if (url.length > LOGO_URL_MAX) {
       throw new ValidationError(`Logo URL must be ${LOGO_URL_MAX} characters or fewer.`);
+    }
+    // Empty is fine (header falls back to the bundled logo asset); a
+    // non-empty value must be a safe http(s) URL or root-relative path,
+    // since the public header renders it as an <img src>.
+    if (url && !isValidLogoUrl(url)) {
+      throw new ValidationError(
+        "Logo URL must be a full http(s):// URL or a root-relative path (e.g. /uploads/logo.png)."
+      );
     }
     result.logoUrl = url || null;
   }

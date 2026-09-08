@@ -12,10 +12,14 @@
 }
 
 /* Drop cap on the first paragraph — matches the reference mockups'
-   `.static-page .body-copy p:first-of-type::first-letter` (used for both
-   CMS Page content and the single-post body, since post.html's <main> also
-   carries the `.static-page` class). */
-.prose :global(p:first-of-type)::first-letter {
+   `.static-page .body-copy p:first-of-type::first-letter`. Scoped to
+   `article .prose` so it only decorates real article bodies (the single
+   post page wraps ProseContent in <article>). Generic CMS Pages — About,
+   Contact, Work With Me — render ProseContent with no <article> wrapper,
+   and several of them use a short, heading-like first paragraph (the
+   Contact page's body is literally `<p>Contact</p>`) that a 68px drop cap
+   turned into broken-looking display type. */
+:global(article) .prose :global(p:first-of-type)::first-letter {
   font-family: var(--font-heading);
   font-size: 68px;
   line-height: 0.8;

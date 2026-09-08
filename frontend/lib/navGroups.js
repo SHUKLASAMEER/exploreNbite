@@ -1,91 +1,57 @@
-// Primary-navigation order + grouping — applied at render time, in the
-// frontend only.
+// Assembles the public primary-navigation tree from the CMS menu data —
+// GET /api/menu (menu_items table). Since the "Admin Menu ↔ nav sync" change
+// the hierarchy is DB-driven, not hardcoded here:
 //
-// The nav menu is CMS/DB-driven (GET /api/menu → menu_items table) and flat:
-// prisma/schema.prisma locks "Menu items are flat (no parent_id)", and each
-// row's own sortOrder is admin-editable data, not a hierarchy. The required
-// public nav is a fixed order (Home, Travel, Bites…, More About Me, Work
-// With Me, About Us, Contact) that does not match menu_items.sortOrder and
-// pulls one further-down item ("Poetry Corner") into a dropdown between two
-// other top-level items — neither a schema change nor reordering the DB rows
-// themselves is needed (or wanted — the menu_items table is left completely
-// untouched) to get there. NAV_LAYOUT below is the single source of truth
-// for the *visible* order and grouping; buildNavTree() slots each existing
-// menu item (matched by its already-resolved href, not by stored label or
-// id — stable regardless of how an item is named in the admin Menu manager)
-// into that layout. A menu item that doesn't appear in NAV_LAYOUT still
-// renders — appended at the end, in its normal menu order — so nothing an
-// admin adds later silently disappears from the public nav.
+//   - a menu item with parentId = null is a top-level nav entry;
+//   - a menu item whose linkType is "group" is a dropdown-only parent
+//     ("Travel", "More About Me") with no destination of its own;
+//   - a menu item with a parentId is a dropdown entry under that group.
 //
-// Each group is a dropdown only: it has no page of its own and is never a
-// link (there is no parent route to point at, and inventing one is out of
-// scope).
-const NAV_LAYOUT = [
-  { type: "link", href: "/category/home" },
-  {
-    type: "group",
-    label: "Travel",
-    children: [
-      { href: "/category/must-visit", label: "Must Visit" },
-      { href: "/category/travel-tips", label: "Travel Tips" },
-    ],
-  },
-  { type: "link", href: "/category/bites-from-corners-of-the-world" },
-  {
-    type: "group",
-    label: "More About Me",
-    children: [
-      { href: "/books", label: "My Books" },
-      { href: "/awards", label: "Mentions & Accolades" },
-      { href: "/category/poetry-corner", label: "Poetry Corner" },
-    ],
-  },
-  { type: "link", href: "/pages/work-with-me" },
-  { type: "link", href: "/pages/about-us" },
-  { type: "link", href: "/pages/contact" },
-];
+// The admin's Menu / Navigation screen is the single source of truth for
+// order, labels and grouping — nothing about the visible nav is defined in
+// this file any more. buildNavTree only shapes the already-ordered flat list
+// the API returns into the { link | group } structure HeaderClient renders.
 
-// Turns the flat [{ id, label, href }] nav list into a mixed list of leaves
-// and groups, in NAV_LAYOUT's exact order:
-//   { type: "link", id, label, href }
-//   { type: "group", label, children: [{ id, label, href }, ...] }
+// Turns the flat, API-ordered nav list into a mixed list of leaves + groups:
+//   { type: "link",  id, label, href }
+//   { type: "group", id, label, children: [{ id, label, href }, ...] }
 //
-// Plain links keep the menu item's own stored label (never overridden, so an
-// admin's exact wording/casing for "Bites from corners of the world",
-// "Work with me", "About us", "Contact" etc. is preserved) — only dropdown
-// child labels are normalized to the exact required text. A group with zero
-// matched children is dropped entirely, and a layout slot whose menu item
-// doesn't currently exist is skipped — a missing/renamed menu item can never
-// produce a blank slot or an empty parent.
-export function buildNavTree(navItems, layout = NAV_LAYOUT) {
-  const byHref = new Map(navItems.map((item) => [item.href, item]));
-  const consumed = new Set();
+// `navItems` entries: { id, label, href, linkType, parentId }. `href` is the
+// resolved URL (see resolveMenuItemHref) or null for a group / an item whose
+// page/category target no longer resolves.
+//
+// Rules that keep the nav sane regardless of admin input:
+//   - a group with no resolvable children is dropped (never an empty dropdown);
+//   - a non-group top-level item with no href is dropped;
+//   - a child whose href doesn't resolve is dropped from its dropdown;
+//   - a child pointing at a missing/non-group parent falls back to top level
+//     (matched by parentId), so it can never silently vanish.
+export function buildNavTree(navItems) {
+  const items = Array.isArray(navItems) ? navItems : [];
 
-  const tree = layout
-    .map((slot) => {
-      if (slot.type === "link") {
-        const item = byHref.get(slot.href);
-        if (!item) return null;
-        consumed.add(slot.href);
-        return { type: "link", id: item.id, label: item.label, href: item.href };
+  const groupIds = new Set(items.filter((item) => item.linkType === "group").map((item) => item.id));
+
+  const childrenByParent = new Map();
+  for (const item of items) {
+    if (item.parentId != null && groupIds.has(item.parentId)) {
+      if (!childrenByParent.has(item.parentId)) childrenByParent.set(item.parentId, []);
+      childrenByParent.get(item.parentId).push(item);
+    }
+  }
+
+  const isTopLevel = (item) => item.parentId == null || !groupIds.has(item.parentId);
+
+  return items
+    .filter(isTopLevel)
+    .map((item) => {
+      if (item.linkType === "group") {
+        const children = (childrenByParent.get(item.id) ?? [])
+          .filter((child) => Boolean(child.href))
+          .map((child) => ({ id: child.id, label: child.label, href: child.href }));
+        return children.length > 0 ? { type: "group", id: item.id, label: item.label, children } : null;
       }
-
-      const children = slot.children
-        .map((child) => {
-          const item = byHref.get(child.href);
-          if (!item) return null;
-          consumed.add(child.href);
-          return { id: item.id, href: item.href, label: child.label };
-        })
-        .filter(Boolean);
-
-      return children.length > 0 ? { type: "group", label: slot.label, children } : null;
+      if (!item.href) return null;
+      return { type: "link", id: item.id, label: item.label, href: item.href };
     })
     .filter(Boolean);
-
-  const leftover = navItems
-    .filter((item) => !consumed.has(item.href))
-    .map((item) => ({ type: "link", id: item.id, label: item.label, href: item.href }));
-
-  return [...tree, ...leftover];
 }

@@ -59,6 +59,10 @@ export async function getPublicMenu() {
 // resolve to. custom_url is always a fully-qualified URL (validated in
 // backend/src/utils/validation/menuItems.js), so it's returned as-is.
 export function resolveMenuItemHref(item) {
+  // A "group" is a dropdown parent with no destination of its own.
+  if (item.linkType === "group") {
+    return null;
+  }
   if (item.linkType === "page") {
     return item.page?.slug ? `/pages/${item.page.slug}` : null;
   }

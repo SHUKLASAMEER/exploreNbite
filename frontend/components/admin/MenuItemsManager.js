@@ -1,15 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 
 const LINK_TYPES = [
   { value: "page", label: "Page" },
   { value: "category", label: "Category" },
   { value: "custom_url", label: "Custom URL" },
+  { value: "group", label: "Group (dropdown parent — no link)" },
 ];
 
-const emptyForm = { label: "", linkType: "page", pageId: "", categoryId: "", customUrl: "", sortOrder: "" };
+const emptyForm = {
+  label: "",
+  linkType: "page",
+  pageId: "",
+  categoryId: "",
+  customUrl: "",
+  parentId: "",
+  sortOrder: "",
+};
 
 const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
 const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
@@ -26,6 +35,9 @@ async function parseJsonSafe(res) {
 }
 
 function targetLabel(item) {
+  if (item.linkType === "group") {
+    return <em style={{ color: "#888" }}>Dropdown parent (no link)</em>;
+  }
   if (item.linkType === "page") {
     return item.page ? `Page: ${item.page.title}` : <em style={{ color: "crimson" }}>Page not found</em>;
   }
@@ -37,6 +49,65 @@ function targetLabel(item) {
       {item.customUrl}
     </a>
   );
+}
+
+// The flat API list -> [{ item, depth }] in nav order: each top-level item,
+// immediately followed by the items nested under it. This is exactly the
+// order the public header renders (see lib/navGroups.js), so what the admin
+// sees here matches the site.
+function toTreeRows(items) {
+  const groupIds = new Set(items.filter((i) => i.linkType === "group").map((i) => i.id));
+  const childrenByParent = new Map();
+  for (const item of items) {
+    if (item.parentId != null && groupIds.has(item.parentId)) {
+      if (!childrenByParent.has(item.parentId)) childrenByParent.set(item.parentId, []);
+      childrenByParent.get(item.parentId).push(item);
+    }
+  }
+  const rows = [];
+  for (const item of items) {
+    const isTopLevel = item.parentId == null || !groupIds.has(item.parentId);
+    if (!isTopLevel) continue;
+    rows.push({ item, depth: 0 });
+    for (const child of childrenByParent.get(item.id) ?? []) {
+      rows.push({ item: child, depth: 1 });
+    }
+  }
+  return rows;
+}
+
+// Reorders one scope (top level, or the children of a single group) by
+// swapping two neighbours, then flattens the whole tree back to a single id
+// list for PATCH /api/admin/menu/reorder (which still takes the full order).
+function reorderWithinScope(items, movingItem, direction) {
+  const groupIds = new Set(items.filter((i) => i.linkType === "group").map((i) => i.id));
+  const childrenByParent = new Map();
+  const topLevel = [];
+  for (const item of items) {
+    const isTop = item.parentId == null || !groupIds.has(item.parentId);
+    if (isTop) {
+      topLevel.push(item);
+    } else {
+      if (!childrenByParent.has(item.parentId)) childrenByParent.set(item.parentId, []);
+      childrenByParent.get(item.parentId).push(item);
+    }
+  }
+
+  const movingIsTop = movingItem.parentId == null || !groupIds.has(movingItem.parentId);
+  const scope = movingIsTop ? topLevel : childrenByParent.get(movingItem.parentId) ?? [];
+  const index = scope.findIndex((i) => i.id === movingItem.id);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= scope.length) return null;
+  [scope[index], scope[target]] = [scope[target], scope[index]];
+
+  const flat = [];
+  for (const item of topLevel) {
+    flat.push(item.id);
+    if (groupIds.has(item.id)) {
+      for (const child of childrenByParent.get(item.id) ?? []) flat.push(child.id);
+    }
+  }
+  return flat;
 }
 
 export default function MenuItemsManager() {
@@ -55,7 +126,13 @@ export default function MenuItemsManager() {
   const [deleteError, setDeleteError] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const [reorderingId, setReorderingId] = useState(null);
+  const [reordering, setReordering] = useState(false);
+
+  const groupOptions = useMemo(
+    () => (menuItems ?? []).filter((item) => item.linkType === "group"),
+    [menuItems]
+  );
+  const treeRows = useMemo(() => toTreeRows(menuItems ?? []), [menuItems]);
 
   useEffect(() => {
     loadMenuItems();
@@ -79,9 +156,6 @@ export default function MenuItemsManager() {
     }
   }
 
-  // Pages/categories for the pickers — best-effort only. If either fails to
-  // load, the manager itself still works (the affected picker just shows no
-  // options); this is not fatal to the page the way loadMenuItems() is.
   async function loadPickerData() {
     try {
       const [pagesRes, categoriesRes] = await Promise.all([
@@ -92,7 +166,7 @@ export default function MenuItemsManager() {
       if (pagesRes.ok) setPages(pagesData?.pages ?? []);
       if (categoriesRes.ok) setCategories(categoriesData?.categories ?? []);
     } catch {
-      // Non-fatal — see comment above.
+      // Non-fatal — the affected picker just shows no options.
     }
   }
 
@@ -111,6 +185,7 @@ export default function MenuItemsManager() {
       pageId: item.pageId ? String(item.pageId) : "",
       categoryId: item.categoryId ? String(item.categoryId) : "",
       customUrl: item.customUrl ?? "",
+      parentId: item.parentId ? String(item.parentId) : "",
       sortOrder: String(item.sortOrder),
     });
     setFormError("");
@@ -123,10 +198,16 @@ export default function MenuItemsManager() {
   }
 
   function setLinkType(linkType) {
-    // Switching link type clears the other two targets so the form can
-    // never submit a stale, no-longer-relevant pageId/categoryId/customUrl
-    // alongside the new type.
-    setFormValues((prev) => ({ ...prev, linkType, pageId: "", categoryId: "", customUrl: "" }));
+    // Switching link type clears the other targets. A group can't have a
+    // parent, so clear that too when switching to "group".
+    setFormValues((prev) => ({
+      ...prev,
+      linkType,
+      pageId: "",
+      categoryId: "",
+      customUrl: "",
+      parentId: linkType === "group" ? "" : prev.parentId,
+    }));
   }
 
   async function handleSubmit(event) {
@@ -140,8 +221,13 @@ export default function MenuItemsManager() {
       payload.pageId = formValues.pageId ? Number(formValues.pageId) : null;
     } else if (formValues.linkType === "category") {
       payload.categoryId = formValues.categoryId ? Number(formValues.categoryId) : null;
-    } else {
+    } else if (formValues.linkType === "custom_url") {
       payload.customUrl = formValues.customUrl;
+    }
+    // parentId is always sent (null clears it) except for groups, which
+    // can't be nested.
+    if (formValues.linkType !== "group") {
+      payload.parentId = formValues.parentId ? Number(formValues.parentId) : null;
     }
     if (formValues.sortOrder !== "") {
       payload.sortOrder = Number(formValues.sortOrder);
@@ -206,36 +292,44 @@ export default function MenuItemsManager() {
     }
   }
 
-  async function moveMenuItem(index, direction) {
-    if (!menuItems) return;
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= menuItems.length) return;
+  async function moveMenuItem(item, direction) {
+    if (!menuItems || reordering) return;
+    const order = reorderWithinScope(menuItems, item, direction);
+    if (!order) return;
 
-    const reordered = [...menuItems];
-    [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
-
-    setReorderingId(menuItems[index].id);
+    setReordering(true);
     setSuccessMessage("");
     try {
       const res = await apiFetch("/api/admin/menu/reorder", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order: reordered.map((m) => m.id) }),
+        body: JSON.stringify({ order }),
       });
       const data = await parseJsonSafe(res);
-
       if (!res.ok) {
         setListError(data?.error?.message ?? "Could not reorder menu items.");
-        setReorderingId(null);
+        setReordering(false);
         return;
       }
-
-      setMenuItems(data.menuItems ?? reordered);
-      setReorderingId(null);
+      setMenuItems(data.menuItems ?? menuItems);
+      setReordering(false);
     } catch {
       setListError("Could not reorder menu items.");
-      setReorderingId(null);
+      setReordering(false);
     }
+  }
+
+  // Is `row` first / last within its own scope (top level, or its group's
+  // children)? Used to disable the up/down buttons at the edges.
+  function scopeEdges(row, index) {
+    const sameScope = (a, b) =>
+      (a.item.parentId ?? null) === (b.item.parentId ?? null) && a.depth === b.depth;
+    const prev = treeRows[index - 1];
+    const next = treeRows[index + 1];
+    return {
+      isFirst: !prev || !sameScope(prev, row),
+      isLast: !next || !sameScope(next, row),
+    };
   }
 
   return (
@@ -246,6 +340,13 @@ export default function MenuItemsManager() {
           + Add Menu Item
         </button>
       </div>
+
+      <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
+        This is the public site&apos;s navigation, exactly as it renders. A <strong>Group</strong> is a
+        dropdown parent with no page of its own (e.g. <em>Travel</em>, <em>More About Me</em>); set an
+        item&apos;s <strong>Parent group</strong> to nest it in that dropdown. Use ↑/↓ to reorder within
+        the top level or within a dropdown.
+      </p>
 
       {successMessage ? (
         <p role="status" style={{ color: "green", margin: 0 }}>
@@ -303,6 +404,12 @@ export default function MenuItemsManager() {
               ))}
             </select>
           </label>
+
+          {formValues.linkType === "group" ? (
+            <p style={{ margin: 0, fontSize: "0.8rem", color: "#888" }}>
+              A group has no destination — it just holds the items nested under it as a dropdown.
+            </p>
+          ) : null}
 
           {formValues.linkType === "page" ? (
             <label style={labelStyle}>
@@ -362,6 +469,26 @@ export default function MenuItemsManager() {
             </label>
           ) : null}
 
+          {formValues.linkType !== "group" ? (
+            <label style={labelStyle}>
+              Parent group <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
+              <select
+                style={inputStyle}
+                value={formValues.parentId}
+                onChange={(e) => setFormValues((prev) => ({ ...prev, parentId: e.target.value }))}
+              >
+                <option value="">— Top level —</option>
+                {groupOptions
+                  .filter((g) => formMode === "create" || g.id !== formMode.id)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          ) : null}
+
           <label style={labelStyle}>
             Order
             <input
@@ -406,44 +533,51 @@ export default function MenuItemsManager() {
             </tr>
           </thead>
           <tbody>
-            {menuItems.map((item, index) => (
-              <tr key={item.id}>
-                <td style={tdStyle}>{item.label}</td>
-                <td style={tdStyle}>
-                  <code>{item.linkType}</code>
-                </td>
-                <td style={tdStyle}>{targetLabel(item)}</td>
-                <td style={tdStyle}>{item.sortOrder}</td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      onClick={() => moveMenuItem(index, -1)}
-                      disabled={index === 0 || reorderingId !== null}
-                      aria-label={`Move ${item.label} up`}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      onClick={() => moveMenuItem(index, 1)}
-                      disabled={index === menuItems.length - 1 || reorderingId !== null}
-                      aria-label={`Move ${item.label} down`}
-                    >
-                      ↓
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => openEditForm(item)}>
-                      Edit
-                    </button>
-                    <button type="button" style={buttonStyle} onClick={() => confirmDelete(item)}>
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {treeRows.map((row, index) => {
+              const { item, depth } = row;
+              const { isFirst, isLast } = scopeEdges(row, index);
+              return (
+                <tr key={item.id}>
+                  <td style={{ ...tdStyle, paddingLeft: depth ? "2rem" : "0.5rem" }}>
+                    {depth ? <span style={{ color: "#aaa" }}>↳ </span> : null}
+                    {item.linkType === "group" ? <strong>{item.label}</strong> : item.label}
+                  </td>
+                  <td style={tdStyle}>
+                    <code>{item.linkType}</code>
+                  </td>
+                  <td style={tdStyle}>{targetLabel(item)}</td>
+                  <td style={tdStyle}>{item.sortOrder}</td>
+                  <td style={tdStyle}>
+                    <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        style={buttonStyle}
+                        onClick={() => moveMenuItem(item, -1)}
+                        disabled={isFirst || reordering}
+                        aria-label={`Move ${item.label} up`}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        style={buttonStyle}
+                        onClick={() => moveMenuItem(item, 1)}
+                        disabled={isLast || reordering}
+                        aria-label={`Move ${item.label} down`}
+                      >
+                        ↓
+                      </button>
+                      <button type="button" style={buttonStyle} onClick={() => openEditForm(item)}>
+                        Edit
+                      </button>
+                      <button type="button" style={buttonStyle} onClick={() => confirmDelete(item)}>
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

@@ -143,6 +143,15 @@ async function list(query) {
   };
 }
 
+// Admin post preview: run the editor's current (unsaved) content HTML through
+// the EXACT same write-boundary sanitizer as create()/update() and hand it
+// straight back — nothing is written to the database. This lets the admin
+// preview route render draft/unsaved content with the same security rules
+// public content is held to, without ever persisting or exposing it.
+function sanitizePreviewContent(content) {
+  return sanitizeContentHtml(typeof content === "string" ? content : "");
+}
+
 async function create(body) {
   const data = parsePostInput(body, "create");
   // Harden admin-authored rich text at the write boundary (removes
@@ -287,4 +296,4 @@ async function remove(rawId) {
   await prisma.post.delete({ where: { id } });
 }
 
-module.exports = { list, create, getById, getBySlug, update, remove };
+module.exports = { list, create, getById, getBySlug, update, remove, sanitizePreviewContent };

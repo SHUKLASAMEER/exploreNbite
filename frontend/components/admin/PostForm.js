@@ -336,6 +336,39 @@ export default function PostForm({ mode, postId }) {
     }
   }
 
+  // Opens the admin-only preview (app/admin/preview) in a dedicated tab,
+  // handing it the CURRENT form state — including unsaved edits and, for a
+  // brand-new post, before any DB row exists. State travels through
+  // localStorage (same-origin, admin's own browser), never a query string,
+  // and the preview route sanitizes the content server-side before render.
+  // The editor tab is left untouched, so nothing here can be lost.
+  function handlePreview() {
+    const category = categories.find((c) => String(c.id) === form.categoryId) ?? null;
+    const author = authors.find((a) => String(a.id) === form.authorId) ?? null;
+    const payload = {
+      title: form.title,
+      slug: form.slug,
+      shortDescription: form.shortDescription,
+      content: form.content,
+      featuredImageUrl: form.featuredImageUrl,
+      status: form.status,
+      publishDate: form.publishDate ? new Date(form.publishDate).toISOString() : null,
+      category: category ? { name: category.name, slug: category.slug } : null,
+      author: author ? { name: author.name } : null,
+      tags: form.tags,
+      isEditing,
+      postId: isEditing ? postId : null,
+      savedAt: Date.now(),
+    };
+    try {
+      window.localStorage.setItem("enbite:post-preview", JSON.stringify(payload));
+    } catch {
+      showToast("Couldn't open preview (browser storage unavailable).");
+      return;
+    }
+    window.open("/admin/preview", "enbitePostPreview");
+  }
+
   if (loading) {
     return <LoadingState label="Loading post form…" />;
   }
@@ -613,6 +646,9 @@ export default function PostForm({ mode, postId }) {
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={handlePreview} disabled={saving}>
+          Preview
         </Button>
         <Button type="button" variant="secondary" onClick={() => router.push("/admin/posts")} disabled={saving}>
           Cancel

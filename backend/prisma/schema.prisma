@@ -15,7 +15,12 @@
 //    /category/home/ can show every post WordPress files there without
 //    changing what "the" category of a post means anywhere else.
 //  - Comments are flat (no parent_comment_id / no self-relation)
-//  - Menu items are flat (no parent_id) and support page / category / custom_url
+//  - Menu items support ONE level of nesting via a nullable parentId
+//    self-relation (added: Admin Menu ↔ public nav sync). A `group` link
+//    type is a dropdown parent that has no destination of its own — its
+//    children (rows whose parentId points at it) are the dropdown entries.
+//    All pre-existing rows keep parentId = null (top level); nothing about
+//    page / category / custom_url targeting changed.
 //  - No related_posts table — related posts are computed at query time
 //  - No views_count column — view counter is deferred
 //  - Media is a standalone reusable library; content tables store plain image
@@ -258,6 +263,9 @@ enum MenuLinkType {
   page
   category
   custom_url
+  // A dropdown parent with no link target of its own ("Travel", "More About
+  // Me"). Its dropdown entries are the MenuItems whose parentId points here.
+  group
 }
 
 model MenuItem {
@@ -268,12 +276,19 @@ model MenuItem {
   categoryId Int?         @map("category_id")
   customUrl  String?      @map("custom_url") @db.VarChar(500)
   sortOrder  Int          @default(0) @map("sort_order")
+  // One level of nesting only: a top-level item has parentId = null; a
+  // dropdown child points at its `group` parent. Cascade delete so removing
+  // a group takes its children with it (they have nowhere else to live).
+  parentId   Int?         @map("parent_id")
 
-  page     Page?     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  page     Page?      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  category Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  parent   MenuItem?  @relation("MenuItemChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuItem[] @relation("MenuItemChildren")
 
   @@index([pageId])
   @@index([categoryId])
+  @@index([parentId])
   @@map("menu_items")
 }
 

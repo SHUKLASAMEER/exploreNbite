@@ -30,18 +30,25 @@ export default async function Header() {
     getPublicMenu(),
   ]);
 
-  const navItems = (menuItems ?? [])
-    .map((item) => ({ id: item.id, label: item.label, href: resolveMenuItemHref(item) }))
-    .filter((item) => Boolean(item.href));
+  // Keep every row (including link-less "group" parents, whose href is
+  // null) and carry linkType + parentId through — buildNavTree needs them
+  // to assemble the two-level dropdown structure from the DB hierarchy.
+  const navItems = (menuItems ?? []).map((item) => ({
+    id: item.id,
+    label: item.label,
+    linkType: item.linkType,
+    parentId: item.parentId ?? null,
+    href: resolveMenuItemHref(item),
+  }));
 
-  // Flat menu items -> mixed list of leaves + "Travel" / "More About Me"
-  // parent groups (see lib/navGroups.js). Nothing about the underlying
-  // menu_items records changes — this is a render-time regrouping only.
+  // Flat menu rows -> mixed list of leaves + dropdown groups, entirely from
+  // the admin-managed menu_items data (see lib/navGroups.js).
   const navTree = buildNavTree(navItems);
 
   return (
     <HeaderClient
       siteTitle={settings?.siteTitle ?? "Explore N Bite"}
+      logoUrl={settings?.logoUrl ?? null}
       tagline={TAGLINE}
       heroImageUrl={HERO_IMAGE_URL}
       navTree={navTree}

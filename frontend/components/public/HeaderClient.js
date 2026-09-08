@@ -136,7 +136,7 @@ function NavGroup({ node, pathname, isOpen, onToggle, onHoverOpen, onHoverClose,
   );
 }
 
-export default function HeaderClient({ siteTitle, tagline, heroImageUrl, navTree, navError, socialLinks }) {
+export default function HeaderClient({ siteTitle, logoUrl, tagline, heroImageUrl, navTree, navError, socialLinks }) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -200,7 +200,7 @@ export default function HeaderClient({ siteTitle, tagline, heroImageUrl, navTree
     <header className={styles.header}>
       <div className={styles.headerRow} ref={rowRef}>
         <Link href="/" className={styles.logoLink} aria-label={siteTitle}>
-          <Logo priority style={{ height: "var(--header-logo-height)", width: "auto" }} />
+          <Logo src={logoUrl} priority style={{ height: "var(--header-logo-height)", width: "auto" }} />
         </Link>
 
         <button

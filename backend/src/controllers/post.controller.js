@@ -26,6 +26,12 @@ const remove = asyncHandler(async (req, res) => {
   res.json({ success: true });
 });
 
+// Admin-only (this router is behind requireAdmin). Returns the sanitized
+// content HTML for the editor's live preview — persists nothing.
+const preview = asyncHandler(async (req, res) => {
+  res.json({ content: postService.sanitizePreviewContent(req.body?.content) });
+});
+
 // Public — no req.admin available here. Always forces status: "published"
 // (overriding any status the client sent), so a public request can never
 // list drafts.
@@ -39,4 +45,4 @@ const getPublicBySlug = asyncHandler(async (req, res) => {
   res.json({ post });
 });
 
-module.exports = { list, create, getOne, update, remove, listPublic, getPublicBySlug };
+module.exports = { list, create, getOne, update, remove, preview, listPublic, getPublicBySlug };

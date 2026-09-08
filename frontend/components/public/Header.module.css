@@ -12,6 +12,15 @@
 .header {
   background: var(--enb-bg);
   --header-logo-height: 44px;
+  /* Not a layout box of its own: its two children (.headerRow and .hero)
+     become direct children of the page's flex column (.themeRoot in
+     app/(site)/theme.module.css). That is what lets the white nav row's
+     desktop `position: sticky` (see the min-width media query below)
+     resolve against the FULL page height — if .header stayed a normal
+     block, the row would unstick the moment the hero scrolled past its
+     bottom edge. `background` here is now moot (both children paint their
+     own), kept only so the token reference documents the intent. */
+  display: contents;
 }
 
 /* --- The one white row --- */
@@ -21,6 +30,26 @@
   gap: 22px;
   padding: 10px 28px;
   background: var(--enb-bg);
+}
+
+/* Desktop only: once the page scrolls far enough that the white row would
+   leave the viewport, it stays pinned to the top instead. `position:
+   sticky` keeps the row in normal flow until that point, so engaging it
+   causes no jump / layout shift (unlike `position: fixed`). It stays stuck
+   for the whole page because .header is `display: contents` (see above),
+   making .themeRoot the row's effective parent. z-index sits above page
+   content, the partially-sticky two-column sidebar badge block (z-index
+   auto), and — since this establishes a new stacking context — safely
+   contains .navDropdown's own z-index: 30. Below --header-bp the layout
+   collapses to the hamburger panel (rows wrap, .collapse becomes an
+   in-flow dropdown); sticky is intentionally NOT applied there so an open
+   mobile menu can never pin as a tall viewport-covering overlay. */
+@media (min-width: 1201px) {
+  .headerRow {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 }
 
 .logoLink {

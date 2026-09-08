@@ -8,7 +8,10 @@ const { ValidationError } = require("../errors");
 // uniqueness is checked in category.service.js, not categories.js).
 const LABEL_MAX = 80;
 const CUSTOM_URL_MAX = 500;
-const LINK_TYPES = ["page", "category", "custom_url"];
+// "group" is a dropdown parent with no destination of its own — see the
+// MenuItem note in prisma/schema.prisma. It carries a label + sortOrder
+// only; page/category/customUrl are always null for it.
+const LINK_TYPES = ["page", "category", "custom_url", "group"];
 
 function normalizeSortOrder(rawValue) {
   if (rawValue === undefined || rawValue === null || rawValue === "") {
@@ -90,6 +93,16 @@ function parseMenuItemInput(body, mode) {
       throw new ValidationError(`Link type must be one of: ${LINK_TYPES.join(", ")}.`);
     }
 
+    // A group is a link-less dropdown parent: it never carries a
+    // page/category/custom URL, and it can't itself be nested under another
+    // group (one level of nesting only).
+    if (linkType === "group") {
+      result.linkType = "group";
+      result.pageId = null;
+      result.categoryId = null;
+      result.customUrl = null;
+    } else {
+
     const pageId = normalizeRefId(input.pageId);
     const categoryId = normalizeRefId(input.categoryId);
     const customUrlRaw = typeof input.customUrl === "string" ? input.customUrl.trim() : "";
@@ -143,6 +156,19 @@ function parseMenuItemInput(body, mode) {
       result.pageId = null;
       result.categoryId = null;
     }
+    } // end non-group branch
+  }
+
+  // parentId — the one level of nesting. null / "" / absent => top level.
+  // A positive integer nests this item under that group (the target's
+  // existence + "must be a group" + "no grand-nesting" checks live in
+  // menuItem.service.js, where the DB is available).
+  if (has("parentId")) {
+    const parentId = normalizeRefId(input.parentId);
+    if (parentId !== null && Number.isNaN(parentId)) {
+      throw new ValidationError("parentId must be a positive integer.");
+    }
+    result.parentId = parentId;
   }
 
   if (has("sortOrder") || has("order")) {
