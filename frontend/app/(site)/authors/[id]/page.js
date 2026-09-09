@@ -5,7 +5,7 @@ import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicAuthorById, getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 import styles from "@/components/public/SinglePost.module.css";
 
 // Author archive — bio + their published posts. Route is /authors/[id],
@@ -16,11 +16,14 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const { author } = await getPublicAuthorById(id);
   if (!author) return {};
+  const { siteName, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: `/authors/${author.id}`,
     title: author.name,
-    description: author.bio ?? `Posts by ${author.name} on Explore N Bite.`,
+    description: author.bio ?? `Posts by ${author.name} on ${siteName}.`,
     image: author.photoUrl ?? undefined,
+    defaultImage: ogImage,
+    siteName,
   });
 }
 

@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { SITE_NAME, SITE_URL } from "@/lib/siteConfig";
+import { getSeoDefaults } from "@/lib/seo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,26 +15,31 @@ const geistMono = Geist_Mono({
 
 // metadataBase makes every relative canonical/OG URL resolve against the
 // real public origin (NEXT_PUBLIC_SITE_URL), never the request host or
-// localhost. The default title/description below are the site-wide
-// fallbacks for any route that doesn't set its own via generateMetadata;
-// the old "rebuild in progress" placeholder is gone.
-export const metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: SITE_NAME,
-    template: `%s | ${SITE_NAME}`,
-  },
-  description: "Offbeat travel stories and food, one bite at a time — by Sweta Papaiyawala.",
-  applicationName: SITE_NAME,
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    url: SITE_URL,
-  },
-  twitter: {
-    card: "summary",
-  },
-};
+// localhost. The site name, default description and default OG image are
+// admin-managed (Settings.siteTitle / metaDescription / defaultOgImageUrl)
+// and read here via getSeoDefaults(); SITE_NAME is only the hard fallback.
+export async function generateMetadata() {
+  const { siteName, description, ogImage } = await getSeoDefaults();
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description,
+    applicationName: siteName,
+    openGraph: {
+      type: "website",
+      siteName,
+      url: SITE_URL,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      images: ogImage ? [ogImage] : undefined,
+    },
+  };
+}
 
 export default function RootLayout({ children }) {
   return (

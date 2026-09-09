@@ -1,4 +1,5 @@
 import { SITE_NAME, absoluteUrl } from "./siteConfig";
+import { getPublicSettings } from "./publicApi";
 
 // One place that assembles a Next.js Metadata object with a canonical URL
 // plus matching OpenGraph and Twitter card blocks, so every public route
@@ -13,13 +14,31 @@ import { SITE_NAME, absoluteUrl } from "./siteConfig";
 // - `type`      "website" (default) or "article"
 // - `noindex`   true to emit robots: { index:false, follow:false }
 // - `publishedTime` / `modifiedTime` / `authors` — article-only extras
+// Hard fallback only — the real site-wide default meta description is
+// admin-editable (Settings.metaDescription) and read via getSeoDefaults().
 const DEFAULT_DESCRIPTION = "Offbeat travel stories and food, one bite at a time — by Sweta Papaiyawala.";
+
+// The admin-managed SEO defaults, for use inside an async generateMetadata().
+// `description` and `ogImage` come from Settings; `siteName` from Settings too
+// so the "%s | <site>" title template and og:site_name follow the CMS. All
+// three degrade to the code fallbacks if Settings can't be loaded.
+export async function getSeoDefaults() {
+  const { settings } = await getPublicSettings();
+  return {
+    siteName: settings?.siteTitle?.trim() || SITE_NAME,
+    tagline: settings?.tagline?.trim() || null,
+    description: settings?.metaDescription?.trim() || DEFAULT_DESCRIPTION,
+    ogImage: settings?.defaultOgImageUrl?.trim() || null,
+  };
+}
 
 export function buildMetadata({
   path = "/",
   title,
   description,
   image,
+  defaultImage,
+  siteName = SITE_NAME,
   type = "website",
   noindex = false,
   publishedTime,
@@ -28,10 +47,13 @@ export function buildMetadata({
 } = {}) {
   const canonical = absoluteUrl(path);
   const desc = (description && String(description).trim()) || DEFAULT_DESCRIPTION;
-  const ogImages = image ? [{ url: absoluteUrl(image) }] : undefined;
+  // Per-page `image` wins; otherwise fall back to the site-wide default OG
+  // image (Settings.defaultOgImageUrl, passed in by an async caller).
+  const ogImage = image || defaultImage || null;
+  const ogImages = ogImage ? [{ url: absoluteUrl(ogImage) }] : undefined;
   // `title` may be a plain string (gets the "| Explore N Bite" template
   // applied by the root layout) or { absolute: "…" } to opt out of it.
-  const titleText = typeof title === "string" ? title : title?.absolute || SITE_NAME;
+  const titleText = typeof title === "string" ? title : title?.absolute || siteName;
 
   const metadata = {
     title,
@@ -40,7 +62,7 @@ export function buildMetadata({
     openGraph: {
       type,
       url: canonical,
-      siteName: SITE_NAME,
+      siteName,
       title: titleText,
       description: desc,
       images: ogImages,
@@ -53,10 +75,10 @@ export function buildMetadata({
         : {}),
     },
     twitter: {
-      card: image ? "summary_large_image" : "summary",
+      card: ogImage ? "summary_large_image" : "summary",
       title: titleText,
       description: desc,
-      images: image ? [absoluteUrl(image)] : undefined,
+      images: ogImage ? [absoluteUrl(ogImage)] : undefined,
     },
   };
 

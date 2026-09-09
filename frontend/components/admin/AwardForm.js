@@ -36,7 +36,18 @@ const emptyForm = {
   imageUrl: "",
   sourceLink: "",
   dateReceived: "",
+  badgeSlot: "none",
 };
+
+// Where (if anywhere) this award shows up in the public sidebar. award_photo
+// / tripoto / indiblogger each hold exactly one award (the backend rejects a
+// second). Sur.ly is a separate static widget, not an award.
+const BADGE_SLOT_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "award_photo", label: "Award Photo (heading + image)" },
+  { value: "tripoto", label: "Tripoto badge" },
+  { value: "indiblogger", label: "IndiBlogger badge" },
+];
 
 export default function AwardForm({ mode, awardId }) {
   const router = useRouter();
@@ -71,6 +82,7 @@ export default function AwardForm({ mode, awardId }) {
           imageUrl: award.imageUrl ?? "",
           sourceLink: award.sourceLink ?? "",
           dateReceived: toDateInputValue(award.dateReceived),
+          badgeSlot: award.badgeSlot ?? "none",
         });
       } catch (err) {
         if (!cancelled) setLoadError(err.message || "Failed to load this award.");
@@ -95,6 +107,7 @@ export default function AwardForm({ mode, awardId }) {
       imageUrl: form.imageUrl,
       sourceLink: form.sourceLink,
       dateReceived: form.dateReceived === "" ? null : form.dateReceived,
+      badgeSlot: form.badgeSlot,
     };
 
     try {
@@ -181,6 +194,25 @@ export default function AwardForm({ mode, awardId }) {
           value={form.dateReceived}
           onChange={(e) => setForm((prev) => ({ ...prev, dateReceived: e.target.value }))}
         />
+
+        <FormField
+          label="Sidebar Badge Slot"
+          htmlFor="award-badge-slot"
+          hint="Where this award appears in the public sidebar. Each slot holds one award."
+        >
+          <select
+            id="award-badge-slot"
+            className={styles.select}
+            value={form.badgeSlot}
+            onChange={(e) => setForm((prev) => ({ ...prev, badgeSlot: e.target.value }))}
+          >
+            {BADGE_SLOT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </FormField>
       </section>
 
       <div className={styles.formActions}>

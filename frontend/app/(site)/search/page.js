@@ -5,16 +5,21 @@ import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 
 // Search-result pages are useful to visitors but not something search
 // engines should index (thin, query-dependent, near-infinite variants).
-export const metadata = buildMetadata({
-  path: "/search",
-  title: "Search",
-  description: "Search posts on Explore N Bite.",
-  noindex: true,
-});
+export async function generateMetadata() {
+  const { siteName, ogImage } = await getSeoDefaults();
+  return buildMetadata({
+    path: "/search",
+    title: "Search",
+    description: `Search posts on ${siteName}.`,
+    defaultImage: ogImage,
+    siteName,
+    noindex: true,
+  });
+}
 
 // Backs the sidebar's Search widget (a plain GET form to /search?q=...) —
 // reuses the public posts list endpoint's existing `search` param

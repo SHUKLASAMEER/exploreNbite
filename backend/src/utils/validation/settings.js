@@ -4,10 +4,13 @@ const { ValidationError } = require("../errors");
 // model) so a validation error surfaces before the database would reject
 // it.
 const SITE_TITLE_MAX = 150;
+const TAGLINE_MAX = 200;
 const LOGO_URL_MAX = 500;
+const IMAGE_URL_MAX = 500;
 const SOCIAL_URL_MAX = 300;
 const CONTACT_EMAIL_MAX = 190;
 const FOOTER_TEXT_MAX = 300;
+const META_DESCRIPTION_MAX = 300;
 
 function isValidUrl(value) {
   try {
@@ -18,10 +21,10 @@ function isValidUrl(value) {
   }
 }
 
-// Logo may be an uploaded-media URL (http/https) or a root-relative path
-// like "/uploads/logo.png" — never javascript:/data:/other schemes. Same
-// rule shape as utils/validation/menuItems.js's custom-URL check, so the
-// header only ever renders a safe <img src>.
+// An image URL may be an uploaded-media URL (http/https) or a root-relative
+// path like "/uploads/logo.png" — never javascript:/data:/other schemes.
+// Same rule shape as utils/validation/menuItems.js's custom-URL check, so the
+// public site only ever renders a safe <img src> / CSS background url().
 function isValidLogoUrl(value) {
   if (/^\/(?!\/)/.test(value)) {
     return !/\s/.test(value);
@@ -37,6 +40,29 @@ function isValidEmail(value) {
   // Same lightweight-but-real check already used in
   // utils/validation/subscribers.js and utils/validation/comments.js.
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function parseOptionalText(raw, label, max, has, result, key) {
+  if (!has(key)) return;
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (value.length > max) {
+    throw new ValidationError(`${label} must be ${max} characters or fewer.`);
+  }
+  result[key] = value || null;
+}
+
+function parseOptionalImageUrl(raw, label, has, result, key) {
+  if (!has(key)) return;
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (value.length > IMAGE_URL_MAX) {
+    throw new ValidationError(`${label} must be ${IMAGE_URL_MAX} characters or fewer.`);
+  }
+  if (value && !isValidLogoUrl(value)) {
+    throw new ValidationError(
+      `${label} must be a full http(s):// URL or a root-relative path (e.g. /uploads/hero.jpg).`
+    );
+  }
+  result[key] = value || null;
 }
 
 function parseSocialUrl(raw, label, has, result, key) {
@@ -77,6 +103,16 @@ function parseSettingsInput(body) {
     }
     result.siteTitle = siteTitle;
   }
+
+  // Optional plain-text fields — empty clears them (the public site falls
+  // back to a bundled default), a value is length-capped to match the schema.
+  parseOptionalText(input.tagline, "Tagline", TAGLINE_MAX, has, result, "tagline");
+  parseOptionalText(input.metaDescription, "Meta description", META_DESCRIPTION_MAX, has, result, "metaDescription");
+
+  // Optional image URL fields — same safe-URL rule as the logo (http(s) or
+  // root-relative path), rendered as a CSS background / <meta og:image>.
+  parseOptionalImageUrl(input.heroImageUrl, "Hero image URL", has, result, "heroImageUrl");
+  parseOptionalImageUrl(input.defaultOgImageUrl, "Default OG image URL", has, result, "defaultOgImageUrl");
 
   if (has("logoUrl")) {
     const url = typeof input.logoUrl === "string" ? input.logoUrl.trim() : "";

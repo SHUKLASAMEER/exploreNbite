@@ -19,6 +19,8 @@ const settingsRoutes = require("./settings.routes");
 const menuItemRoutes = require("./menuItem.routes");
 const publicMenuRoutes = require("./publicMenu.routes");
 const publicSettingsRoutes = require("./publicSettings.routes");
+const sidebarRoutes = require("./sidebar.routes");
+const publicSidebarRoutes = require("./publicSidebar.routes");
 const publicPostRoutes = require("./publicPost.routes");
 const publicCategoryRoutes = require("./publicCategory.routes");
 const publicAuthorRoutes = require("./publicAuthor.routes");
@@ -59,6 +61,7 @@ router.use("/contact", contactRoutes);
 // stay at /admin/menu and /admin/settings below, untouched.
 router.use("/menu", publicMenuRoutes);
 router.use("/settings", publicSettingsRoutes);
+router.use("/sidebar", publicSidebarRoutes);
 
 // Public — GET /api/categories(/:slug), /api/authors(/:id), /api/books,
 // /api/awards, /api/pages/:slug — the public-site read surface for the
@@ -95,5 +98,6 @@ router.use("/admin/messages", requireAdmin, contactMessageRoutes);
 router.use("/admin/media", requireAdmin, mediaRoutes);
 router.use("/admin/settings", requireAdmin, settingsRoutes);
 router.use("/admin/menu", requireAdmin, menuItemRoutes);
+router.use("/admin/sidebar", requireAdmin, sidebarRoutes);
 
 module.exports = router;

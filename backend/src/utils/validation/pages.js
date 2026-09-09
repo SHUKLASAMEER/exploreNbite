@@ -9,6 +9,11 @@ const SLUG_MAX = 220;
 const MENU_POSITION_MIN = 0;
 const MENU_POSITION_MAX = 100000;
 
+// Keep in sync with enum PageType in prisma/schema.prisma. Drives whether the
+// public page appends a Contact / Work With Me enquiry form — never inferred
+// from the slug or title any more.
+const PAGE_TYPES = ["standard", "contact", "work_with_me"];
+
 /**
  * Parses + validates page input from a request body into a Prisma-ready
  * scalar `data` object. Does NOT touch slug uniqueness or menu-position
@@ -48,6 +53,18 @@ function parsePageInput(body, mode) {
       throw new ValidationError("Content is required.");
     }
     result.content = content;
+  }
+
+  if (mode === "create" || has("pageType")) {
+    const raw = typeof input.pageType === "string" ? input.pageType.trim() : "";
+    if (!raw && mode === "create") {
+      result.pageType = "standard";
+    } else if (has("pageType")) {
+      if (!PAGE_TYPES.includes(raw)) {
+        throw new ValidationError(`Page type must be one of: ${PAGE_TYPES.join(", ")}.`);
+      }
+      result.pageType = raw;
+    }
   }
 
   if (has("showInMenu")) {

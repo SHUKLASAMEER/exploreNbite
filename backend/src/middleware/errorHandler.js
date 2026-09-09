@@ -19,6 +19,27 @@ function errorHandler(err, req, res, next) {
     return res.status(err.statusCode).json({ error: { message: err.message, code: err.code } });
   }
 
+  // Body-parser failures (express.json / express.urlencoded). A malformed
+  // body like `{bad json` throws a SyntaxError with `type` set and
+  // `status`/`statusCode` 400 — without this it would fall through to the
+  // generic 500 path below. Return the app's standard validation shape
+  // instead, with no parser internals or stack in the body.
+  if (err.type === "entity.parse.failed") {
+    return res
+      .status(400)
+      .json({ error: { message: "Request body is not valid JSON.", code: "INVALID_JSON" } });
+  }
+  if (err.type === "entity.too.large") {
+    return res
+      .status(413)
+      .json({ error: { message: "Request body is too large.", code: "PAYLOAD_TOO_LARGE" } });
+  }
+  if (err.type === "charset.unsupported" || err.type === "encoding.unsupported") {
+    return res
+      .status(400)
+      .json({ error: { message: "Unsupported request body encoding.", code: "BAD_REQUEST" } });
+  }
+
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === "P2002") {
       return res

@@ -1,6 +1,21 @@
 const { prisma } = require("../config/prisma");
-const { parseAwardInput } = require("../utils/validation/awards");
+const { parseAwardInput, EXCLUSIVE_BADGE_SLOTS } = require("../utils/validation/awards");
 const { NotFoundError, ValidationError } = require("../utils/errors");
+
+// award_photo / tripoto / indiblogger hold exactly one award each. If `data`
+// assigns one of those slots, make sure no other award already occupies it —
+// otherwise two awards would silently fight over the same sidebar badge.
+async function assertBadgeSlotFree(data, currentId) {
+  if (!data.badgeSlot || !EXCLUSIVE_BADGE_SLOTS.includes(data.badgeSlot)) return;
+  const holder = await prisma.award.findFirst({
+    where: { badgeSlot: data.badgeSlot, ...(currentId ? { NOT: { id: currentId } } : {}) },
+  });
+  if (holder) {
+    throw new ValidationError(
+      `The "${data.badgeSlot}" badge slot is already assigned to "${holder.title}". Clear it there first.`
+    );
+  }
+}
 
 async function list() {
   // Award has no dedicated ordering field — newest-first is the
@@ -12,8 +27,7 @@ async function list() {
 
 async function create(body) {
   const data = parseAwardInput(body, "create");
-  // No unique constraint exists on Award in the locked schema — there is
-  // no duplicate/conflict scenario to guard against here.
+  await assertBadgeSlotFree(data, null);
   return prisma.award.create({ data });
 }
 
@@ -43,6 +57,7 @@ async function update(rawId, body) {
   }
 
   const data = parseAwardInput(body, "update");
+  await assertBadgeSlotFree(data, id);
   return prisma.award.update({ where: { id }, data });
 }
 

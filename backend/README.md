@@ -28,6 +28,10 @@ cp .env.example .env   # fill in real local values
 npm run dev             # node --watch, restarts on file change
 ```
 
+For production configuration (required env vars, email, media storage,
+cookies, scaling, go-live checklist) see **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+`src/config/env.js` fails fast at startup on an unsafe production config.
+
 ## Auth & cross-origin cookies
 
 Login sets an httpOnly `admin_session` cookie (JWT). Every `/api/admin/*`
@@ -47,9 +51,9 @@ things make the cookie work across that boundary:
   ignores port. `localhost:3000` and `localhost:4000` share the same site
   ("localhost"), so `Lax` cookies are still attached to fetches between
   them as long as the client sends `credentials: "include"` (see
-  `frontend/lib/api.js`). This stops working once frontend and backend are
-  on genuinely different domains — revisit this (likely `SameSite=None` +
-  `Secure`, which requires HTTPS) before any real deployment.
+  `frontend/lib/api.js`). Once frontend and backend are on genuinely
+  different domains, set `COOKIE_SAMESITE=none` + `COOKIE_SECURE=true`
+  (needs HTTPS) — see [DEPLOYMENT.md](./DEPLOYMENT.md) §1.
 
 Server Components in the frontend have no browser to attach cookies for
 them, so they forward the incoming request's raw `Cookie` header to this

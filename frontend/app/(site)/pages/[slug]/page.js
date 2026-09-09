@@ -6,7 +6,7 @@ import ProseContent from "@/components/public/ProseContent";
 import ContactForm from "@/components/public/ContactForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPageBySlug } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 import { stripHtmlToText } from "@/lib/text";
 
 // Generic CMS Page route — About, Contact, Work With Me, Poetry Corner,
@@ -15,27 +15,23 @@ import { stripHtmlToText } from "@/lib/text";
 // (Page.content), rendered via ProseContent.
 //
 // Two pages also get a real enquiry form appended below their content: the
-// Contact page and the Work With Me page. The Page model has no "page type"
-// flag, so these are matched by slug/title convention (not a schema change
-// for two special cases). Both post to the same public /api/contact
-// endpoint, differing only by `topic`.
-const CONTACT_SLUGS = new Set(["contact", "contact-us", "contct"]);
-const WORK_WITH_ME_SLUGS = new Set(["work-with-me", "work-with-me-2", "collaborate", "hire-me"]);
-
-function matchesPage(page, slugSet, titles) {
-  if (slugSet.has(page.slug)) return true;
-  const t = page.title?.trim().toLowerCase();
-  return titles.includes(t);
-}
+// Contact page and the Work With Me page. Which page is which is set
+// explicitly in the admin (Page.pageType — "contact" / "work_with_me" /
+// "standard"), NOT inferred from the slug or title, so renaming a page never
+// removes its form. Both forms post to the same public /api/contact endpoint,
+// differing only by `topic`.
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const { page } = await getPublicPageBySlug(slug);
   if (!page) return {};
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: `/pages/${page.slug}`,
     title: page.title,
-    description: stripHtmlToText(page.content) || undefined,
+    description: stripHtmlToText(page.content) || description,
+    defaultImage: ogImage,
+    siteName,
   });
 }
 
@@ -57,8 +53,8 @@ export default async function CmsPage({ params }) {
     );
   }
 
-  const isContact = matchesPage(page, CONTACT_SLUGS, ["contact", "contact us"]);
-  const isWorkWithMe = matchesPage(page, WORK_WITH_ME_SLUGS, ["work with me", "collaborate"]);
+  const isContact = page.pageType === "contact";
+  const isWorkWithMe = page.pageType === "work_with_me";
   const hasForm = isContact || isWorkWithMe;
   const hasBody = Boolean(stripHtmlToText(page.content));
 

@@ -1,15 +1,25 @@
 // Minimal in-memory rate limiter — no new dependency.
 //
 // Scope & limits: this is per-process memory. It is correct and sufficient
-// for a single backend instance (the current deployment shape). If the API
-// is ever scaled to multiple instances behind a load balancer, this needs
-// to move to a shared store (Redis) so a client can't get N× the limit by
-// hitting N instances — that is a deployment decision, noted in the audit.
+// for a SINGLE backend instance (the current deployment shape).
+//
+// ⚠ HORIZONTAL SCALING: if the API ever runs as more than one instance
+// behind a load balancer, each instance keeps its own counters, so a client
+// effectively gets N× the limit by spreading requests across N instances.
+// Before scaling out, move this to a shared store (Redis) — e.g. swap the
+// `buckets` Map for `rate-limiter-flexible` + `ioredis`. Until then, keep
+// the API at one instance (or use sticky sessions per client IP).
+//
+// The two limits are env-tunable (RATE_LIMIT_LOGIN_MAX /
+// RATE_LIMIT_PUBLIC_WRITE_MAX) without a code change; defaults below are
+// unchanged.
 //
 // Algorithm: fixed-window counter keyed by client IP (+ an optional route
 // key). Windows are coarse on purpose; the goal is to stop brute-force and
 // bulk-spam, not to police normal use. A cleanup sweep drops stale buckets
 // so memory stays bounded.
+
+const { env } = require("../config/env");
 
 const buckets = new Map(); // key -> { count, resetAt }
 let lastSweep = Date.now();
@@ -72,14 +82,14 @@ function rateLimit({ windowMs, max, key = "default", message } = {}) {
 const loginRateLimit = rateLimit({
   key: "login",
   windowMs: 15 * 60_000,
-  max: 10,
+  max: env.rateLimit.loginMax,
   message: "Too many sign-in attempts. Please wait 15 minutes and try again.",
 });
 
 const publicWriteRateLimit = rateLimit({
   key: "public-write",
   windowMs: 10 * 60_000,
-  max: 20,
+  max: env.rateLimit.publicWriteMax,
   message: "You're doing that too often. Please wait a few minutes and try again.",
 });
 

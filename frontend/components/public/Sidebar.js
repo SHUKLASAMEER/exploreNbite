@@ -1,4 +1,4 @@
-import { getPublicPosts, getPublicAwards, getPublicSubscriberCount, getPublicAuthors } from "@/lib/publicApi";
+import { getPublicPosts, getPublicAwards, getPublicSubscriberCount, getPublicSettings, getPublicSidebarConfig } from "@/lib/publicApi";
 import SearchWidget from "./SearchWidget";
 import RecommendedPostWidget from "./RecommendedPostWidget";
 import RecentPostsWidget from "./RecentPostsWidget";
@@ -8,24 +8,19 @@ import SocialWidget from "./SocialWidget";
 import SubscribeWidget from "./SubscribeWidget";
 import styles from "./Sidebar.module.css";
 
-// Sidebar widget composition + order, verified against the live site's
-// actual rendered sidebar markup (`.sidebar-right-wrap .ashe-widget` order)
-// on "/", "/category/home/" and "/category/must-visit/" — not guessed:
+// Sidebar widget composition + order is admin-editable per layout (see the
+// admin Sidebar screen -> GET /api/sidebar). This map is only the fallback
+// used when that fetch fails or a layout has no rows yet — it's the original,
+// verified-against-the-live-site composition, so the sidebar renders
+// identically until an admin changes something:
 //   - front page "/":     Search, Recommended post, Facebook, Subscribe,
 //                          Twitter, Award photo, Tripoto badge, IndiBlogger
-//                          badge, Sur.ly "Brilliantly SAFE!" badge (a
-//                          faithful static reproduction of the live
-//                          domain-verification widget — see
-//                          SurlyBadgeWidget.js). Live's front page never
-//                          shows Recent Posts at all.
-//   - category archives:  identical stack, with Recent Posts prepended
-//                          first (both /category/home/ and
-//                          /category/must-visit/ — verified identical).
-//   - post.html:           Recent Posts, then Search
-//   - about/my-books/mentions-awards/work-with-me.html: Recommended Post,
-//                          Recent Posts
-//   - contact.html:        Search, Recommended Post, Recent Posts
-const LAYOUTS = {
+//                          badge, Sur.ly "Brilliantly SAFE!" badge.
+//   - category archives:  identical stack with Recent Posts prepended.
+//   - post:                Recent Posts, then Search
+//   - page:                Recommended Post, Recent Posts
+//   - contact/utility:     Search, Recommended Post, Recent Posts
+const DEFAULT_LAYOUTS = {
   home: ["search", "recommended", "facebook", "subscribe", "twitter", "award", "tripoto", "indiblogger", "surly"],
   archive: [
     "recentPosts",
@@ -46,62 +41,63 @@ const LAYOUTS = {
 };
 
 // The one contiguous block that becomes sticky: EXACTLY the three small
-// badge widgets — Tripoto, IndiBlogger, Sur.ly. The "Awarded best travel &
-// food writer" heading + trophy photo directly above them is deliberately
-// NOT in here — it stays in normal flow (it's tall enough that including it
-// pushed the badges out of view once the block pinned). Only the `home` /
-// `archive` layouts include these keys; every other layout renders no
-// sticky block. They're pulled out of the normal widget flow and rendered
-// together inside a single `.stickyBadgeBlock` wrapper so all three move —
-// and pin — as one unit. Order within the block follows the layout array.
+// badge widgets — Tripoto, IndiBlogger, Sur.ly. This is code-owned display
+// behavior (not an editorial setting): the "Awarded best travel & food
+// writer" heading + trophy photo directly above them is deliberately NOT in
+// here — it stays in normal flow (it's tall enough that including it pushed
+// the badges out of view once the block pinned). Order within the block
+// follows the resolved widget list.
 const STICKY_BADGE_KEYS = new Set(["tripoto", "indiblogger", "surly"]);
 
-// Matches specific live-site badges within the CMS's Award list by content
-// rather than a fixed id (ids aren't stable across environments) — same
-// "identify by real content" rule as everywhere else in this sync. Awards
-// that don't match any of these (e.g. the "Special Mention" award, which
-// doesn't appear in the live sidebar either) are simply not shown here.
-function findAward(awards, matcher) {
-  return awards.find(matcher) ?? null;
+// Resolves the active widget key list for `layout` from the admin config,
+// falling back to DEFAULT_LAYOUTS when the layout is missing / the fetch
+// failed. An admin who disables every widget for a layout gets an empty
+// sidebar for it — that's a real choice, so only a missing array falls back.
+function resolveWidgetKeys(config, layout) {
+  const rows = config?.[layout];
+  if (Array.isArray(rows)) {
+    return rows.filter((row) => row.enabled).map((row) => row.widgetKey);
+  }
+  return DEFAULT_LAYOUTS[layout] ?? DEFAULT_LAYOUTS.page;
 }
 
 // Self-fetching sidebar — every page that needs it just renders
 // <Sidebar layout="..." /> instead of each fetching posts/awards itself.
 // Recommended Post + Recent Posts share a single small getPublicPosts
 // fetch: both are independent "N most recent posts" widgets on the live
-// site (they legitimately overlap — live's Recommended list and Recent
-// Posts list share their top 2 entries, verified against the live HTML),
-// so this fetches one top-5 batch and slices it two different ways rather
-// than de-duplicating. `excludePostId` drops the post currently being
-// viewed (single-post page) so it can't recommend itself.
+// site (they legitimately overlap), so this fetches one top-5 batch and
+// slices it two different ways. `excludePostId` drops the post currently
+// being viewed (single-post page) so it can't recommend itself.
 export default async function Sidebar({ layout = "page", excludePostId } = {}) {
-  const widgets = LAYOUTS[layout] ?? LAYOUTS.page;
+  const { config: sidebarConfig } = await getPublicSidebarConfig();
+  const widgets = resolveWidgetKeys(sidebarConfig, layout);
+
   const needsPosts = widgets.includes("recommended") || widgets.includes("recentPosts");
   const needsAwards = widgets.includes("award") || widgets.includes("tripoto") || widgets.includes("indiblogger");
   const needsSubscriberCount = widgets.includes("subscribe");
-  // facebookUrl/twitterUrl aren't part of the (deliberately slim) author
-  // shape embedded on a post — fetched separately, only when a social
-  // widget is actually in this layout.
+  // The Facebook / Twitter widgets link to the site-wide social URLs in
+  // Settings — the single source of truth shared with the header + footer
+  // (lib/socialLinks.js), no longer a second copy on the Author record.
   const needsSocialLinks = widgets.includes("facebook") || widgets.includes("twitter");
 
-  const [{ posts }, { awards }, { count: subscriberCount }, { authors }] = await Promise.all([
+  const [{ posts }, { awards }, { count: subscriberCount }, { settings }] = await Promise.all([
     needsPosts ? getPublicPosts({ page: 1, limit: 5 }) : Promise.resolve({ posts: [] }),
     needsAwards ? getPublicAwards() : Promise.resolve({ awards: [] }),
     needsSubscriberCount ? getPublicSubscriberCount() : Promise.resolve({ count: null }),
-    needsSocialLinks ? getPublicAuthors() : Promise.resolve({ authors: [] }),
+    needsSocialLinks ? getPublicSettings() : Promise.resolve({ settings: null }),
   ]);
 
   const filteredPosts = (posts ?? []).filter((post) => post.id !== excludePostId);
   const recommendedPosts = filteredPosts.slice(0, 2);
   const recommendedAuthor = recommendedPosts[0]?.author ?? filteredPosts[0]?.author ?? null;
   const recentPosts = filteredPosts.slice(0, 5);
-  // Single-author site — the one Author record carries the real social URLs.
-  const socialAuthor = (authors ?? [])[0] ?? null;
 
   const awardList = awards ?? [];
-  const awardPhoto = findAward(awardList, (a) => /travel and food writer/i.test(a.title));
-  const tripotoBadge = findAward(awardList, (a) => a.sourceLink?.includes("tripoto.com"));
-  const indiBloggerBadge = findAward(awardList, (a) => a.sourceLink?.includes("indiblogger"));
+  // Badges are selected by their explicit Award.badgeSlot (set in the admin),
+  // never by matching the award title / source link.
+  const awardPhoto = awardList.find((award) => award.badgeSlot === "award_photo") ?? null;
+  const tripotoBadge = awardList.find((award) => award.badgeSlot === "tripoto") ?? null;
+  const indiBloggerBadge = awardList.find((award) => award.badgeSlot === "indiblogger") ?? null;
 
   function renderWidget(key) {
     switch (key) {
@@ -114,9 +110,9 @@ export default async function Sidebar({ layout = "page", excludePostId } = {}) {
           <SocialWidget
             key={key}
             heading="Recent posts"
-            headingHref={socialAuthor?.facebookUrl}
+            headingHref={settings?.socialFacebook}
             label="View on Facebook"
-            href={socialAuthor?.facebookUrl}
+            href={settings?.socialFacebook}
           />
         );
       case "twitter":
@@ -125,7 +121,7 @@ export default async function Sidebar({ layout = "page", excludePostId } = {}) {
             key={key}
             heading="Follow me on Twitter"
             label="Follow on Twitter"
-            href={socialAuthor?.twitterUrl}
+            href={settings?.socialTwitter}
           />
         );
       case "subscribe":

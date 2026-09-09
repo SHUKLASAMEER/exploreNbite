@@ -169,11 +169,22 @@ model PostTag {
 // Static pages
 // ---------------------------------------------------------------------------
 
+// A page's behavior is driven by this explicit type, NOT by matching its
+// slug or title (which an admin can freely rename). "contact" and
+// "work_with_me" pages get the matching enquiry form appended below their
+// content; "standard" is a plain content page.
+enum PageType {
+  standard
+  contact
+  work_with_me
+}
+
 model Page {
   id           Int      @id @default(autoincrement())
   title        String   @db.VarChar(200)
   slug         String   @unique @db.VarChar(220)
   content      String   @db.LongText
+  pageType     PageType @default(standard) @map("page_type")
   showInMenu   Boolean  @default(false) @map("show_in_menu")
   menuPosition Int?     @map("menu_position")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -219,13 +230,27 @@ model BookBuyLink {
 // Awards / mentions
 // ---------------------------------------------------------------------------
 
+// Which fixed sidebar badge slot (if any) this award fills. Replaces the old
+// fragile "identify the badge by matching its title / sourceLink string"
+// approach — the public sidebar now selects badges by this explicit value.
+// award_photo / tripoto / indiblogger are single-occupant slots (enforced in
+// award.service.js, since MySQL has no partial unique index); `none` is the
+// default and any number of awards can be `none`.
+enum AwardBadgeSlot {
+  none
+  award_photo
+  tripoto
+  indiblogger
+}
+
 model Award {
-  id           Int       @id @default(autoincrement())
-  title        String    @db.VarChar(200)
-  imageUrl     String?   @map("image_url") @db.VarChar(500)
-  sourceLink   String?   @map("source_link") @db.VarChar(500)
-  dateReceived DateTime? @map("date_received") @db.Date
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id           Int            @id @default(autoincrement())
+  title        String         @db.VarChar(200)
+  imageUrl     String?        @map("image_url") @db.VarChar(500)
+  sourceLink   String?        @map("source_link") @db.VarChar(500)
+  dateReceived DateTime?      @map("date_received") @db.Date
+  badgeSlot    AwardBadgeSlot @default(none) @map("badge_slot")
+  createdAt    DateTime       @default(now()) @map("created_at")
 
   @@map("awards")
 }
@@ -333,16 +358,47 @@ model Media {
 // ---------------------------------------------------------------------------
 
 model Settings {
-  id              Int     @id @default(1)
-  siteTitle       String  @map("site_title") @db.VarChar(150)
-  logoUrl         String? @map("logo_url") @db.VarChar(500)
-  socialFacebook  String? @map("social_facebook") @db.VarChar(300)
-  socialTwitter   String? @map("social_twitter") @db.VarChar(300)
-  socialInstagram String? @map("social_instagram") @db.VarChar(300)
-  contactEmail    String  @map("contact_email") @db.VarChar(190)
-  footerText      String? @map("footer_text") @db.VarChar(300)
+  id                Int     @id @default(1)
+  siteTitle         String  @map("site_title") @db.VarChar(150)
+  tagline           String? @map("tagline") @db.VarChar(200)
+  logoUrl           String? @map("logo_url") @db.VarChar(500)
+  heroImageUrl      String? @map("hero_image_url") @db.VarChar(500)
+  socialFacebook    String? @map("social_facebook") @db.VarChar(300)
+  socialTwitter     String? @map("social_twitter") @db.VarChar(300)
+  socialInstagram   String? @map("social_instagram") @db.VarChar(300)
+  contactEmail      String  @map("contact_email") @db.VarChar(190)
+  footerText        String? @map("footer_text") @db.VarChar(300)
+  // Site-wide SEO defaults — the fallback <meta name="description"> and
+  // og:image for any public route that doesn't set its own (posts still
+  // override via shortDescription / featuredImageUrl). Not "AI SEO"; just the
+  // one editorial default pair.
+  metaDescription   String? @map("meta_description") @db.VarChar(300)
+  defaultOgImageUrl String? @map("default_og_image_url") @db.VarChar(500)
 
   @@map("settings")
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar widget configuration
+// ---------------------------------------------------------------------------
+// Editorial control over which sidebar widgets appear, and in what order, for
+// each supported sidebar layout (home / archive / post / page / contact /
+// utility). Code still owns the widget *registry* — what each widget key
+// renders, its sticky behavior, its data needs, its copy — see
+// backend/src/config/sidebarWidgets.js. This table only stores per-(layout,
+// widget) visibility + order. One row per (layout, widgetKey); a widget with
+// no row for a layout simply isn't shown there.
+
+model SidebarWidgetSetting {
+  id        Int     @id @default(autoincrement())
+  layout    String  @db.VarChar(30)
+  widgetKey String  @map("widget_key") @db.VarChar(40)
+  enabled   Boolean @default(true)
+  sortOrder Int     @map("sort_order")
+
+  @@unique([layout, widgetKey])
+  @@index([layout])
+  @@map("sidebar_widget_settings")
 }
 
 // ---------------------------------------------------------------------------

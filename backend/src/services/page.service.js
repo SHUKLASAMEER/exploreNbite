@@ -10,6 +10,7 @@ async function list() {
       id: true,
       title: true,
       slug: true,
+      pageType: true,
       showInMenu: true,
       menuPosition: true,
       createdAt: true,

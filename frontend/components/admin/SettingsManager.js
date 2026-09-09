@@ -2,18 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-
-const inputStyle = { padding: "0.4rem 0.5rem", fontSize: "1rem" };
-const labelStyle = { display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.9rem" };
-const buttonStyle = { padding: "0.4rem 0.8rem", cursor: "pointer" };
-const sectionStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "6px",
-  padding: "1rem",
-};
+import PageHeader from "@/components/admin/ui/PageHeader";
+import Button from "@/components/admin/ui/Button";
+import FormField from "@/components/admin/ui/FormField";
+import ImageUpload from "@/components/admin/ui/ImageUpload";
+import LoadingState from "@/components/admin/ui/LoadingState";
+import ErrorState from "@/components/admin/ui/ErrorState";
+import { useToast } from "@/components/admin/ui/Toast";
+import styles from "./SettingsManager.module.css";
 
 async function parseJsonSafe(res) {
   try {
@@ -23,29 +19,33 @@ async function parseJsonSafe(res) {
   }
 }
 
-const emptyForm = {
-  siteTitle: "",
-  logoUrl: "",
-  socialFacebook: "",
-  socialTwitter: "",
-  socialInstagram: "",
-  contactEmail: "",
-  footerText: "",
-};
+const FIELDS = [
+  "siteTitle",
+  "tagline",
+  "logoUrl",
+  "heroImageUrl",
+  "contactEmail",
+  "socialFacebook",
+  "socialTwitter",
+  "socialInstagram",
+  "footerText",
+  "metaDescription",
+  "defaultOgImageUrl",
+];
 
-// Settings is a singleton (id always 1) — this is a plain load-then-save
-// form, not a list manager: no create, no delete, no pagination. Every
-// field here maps 1:1 to a public-facing setting (site branding, social
-// links, contact email, footer text) so an admin can change what the
-// website shows without a developer touching code.
+const emptyForm = Object.fromEntries(FIELDS.map((key) => [key, ""]));
+
+// Settings is a singleton (id always 1) — a plain load-then-save form, not a
+// list manager. Every field maps 1:1 to something the public site shows
+// (branding, hero, contact, social, footer, default SEO), so a site owner can
+// change what the website displays without a developer touching code.
 export default function SettingsManager() {
+  const showToast = useToast();
+
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-
   const [form, setForm] = useState(emptyForm);
-
   const [formError, setFormError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -61,16 +61,8 @@ export default function SettingsManager() {
           throw new Error(data?.error?.message ?? "Failed to load settings.");
         }
         if (cancelled) return;
-        const settings = data.settings;
-        setForm({
-          siteTitle: settings.siteTitle ?? "",
-          logoUrl: settings.logoUrl ?? "",
-          socialFacebook: settings.socialFacebook ?? "",
-          socialTwitter: settings.socialTwitter ?? "",
-          socialInstagram: settings.socialInstagram ?? "",
-          contactEmail: settings.contactEmail ?? "",
-          footerText: settings.footerText ?? "",
-        });
+        const settings = data.settings ?? {};
+        setForm(Object.fromEntries(FIELDS.map((key) => [key, settings[key] ?? ""])));
       } catch (err) {
         if (!cancelled) setLoadError(err.message || "Failed to load settings.");
       } finally {
@@ -84,10 +76,15 @@ export default function SettingsManager() {
     };
   }, []);
 
+  const setField = (key) => (eventOrValue) =>
+    setForm((prev) => ({
+      ...prev,
+      [key]: typeof eventOrValue === "string" ? eventOrValue : eventOrValue.target.value,
+    }));
+
   async function handleSubmit(event) {
     event.preventDefault();
     setFormError("");
-    setSuccessMessage("");
     setSaving(true);
 
     try {
@@ -100,133 +97,144 @@ export default function SettingsManager() {
 
       if (!res.ok) {
         setFormError(data?.error?.message ?? "Could not save settings.");
+        showToast("Could not save settings.", { type: "error" });
         setSaving(false);
         return;
       }
 
-      setSuccessMessage("Settings updated.");
+      // Reflect any server-side normalisation (trimming, lowercased email).
+      const settings = data.settings ?? {};
+      setForm(Object.fromEntries(FIELDS.map((key) => [key, settings[key] ?? ""])));
       setSaving(false);
+      showToast("Settings saved.");
     } catch {
       setFormError("Something went wrong. Please try again.");
+      showToast("Something went wrong.", { type: "error" });
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <p>Loading settings…</p>;
+    return <LoadingState label="Loading settings…" />;
   }
 
   if (loadError) {
-    return (
-      <p role="alert" style={{ color: "crimson" }}>
-        {loadError}
-      </p>
-    );
+    return <ErrorState title="Couldn't load settings" description={loadError} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "560px" }}>
-      <h1 style={{ margin: 0 }}>Settings</h1>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <PageHeader title="Site Settings" description="Branding, hero, contact, social links and default SEO for the public site." />
 
-      {successMessage ? (
-        <p role="status" style={{ color: "green", margin: 0 }}>
-          {successMessage}
-        </p>
-      ) : null}
-      {formError ? (
-        <p role="alert" style={{ color: "crimson", margin: 0 }}>
-          {formError}
-        </p>
-      ) : null}
+      {formError ? <ErrorState title={formError} /> : null}
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Site</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Branding</h2>
 
-        <label style={labelStyle}>
-          Site Title
-          <input
-            style={inputStyle}
-            type="text"
-            required
-            value={form.siteTitle}
-            onChange={(e) => setForm((prev) => ({ ...prev, siteTitle: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Site Title"
+          htmlFor="settings-site-title"
+          required
+          value={form.siteTitle}
+          onChange={setField("siteTitle")}
+        />
 
-        <label style={labelStyle}>
-          Logo URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional — upload via Media, then paste the URL here)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.logoUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, logoUrl: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Tagline"
+          htmlFor="settings-tagline"
+          hint="Shown under the site title in the hero. Leave blank to use the built-in default."
+          value={form.tagline}
+          onChange={setField("tagline")}
+        />
 
-        <label style={labelStyle}>
-          Contact Email
-          <input
-            style={inputStyle}
-            type="email"
-            required
-            value={form.contactEmail}
-            onChange={(e) => setForm((prev) => ({ ...prev, contactEmail: e.target.value }))}
-          />
-        </label>
+        <ImageUpload label="Logo" value={form.logoUrl} onChange={setField("logoUrl")} />
 
-        <label style={labelStyle}>
-          Footer Text <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            value={form.footerText}
-            onChange={(e) => setForm((prev) => ({ ...prev, footerText: e.target.value }))}
-          />
-        </label>
+        <ImageUpload
+          label="Hero Image"
+          value={form.heroImageUrl}
+          onChange={setField("heroImageUrl")}
+        />
       </section>
 
-      <section style={sectionStyle}>
-        <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Social Links</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Contact</h2>
 
-        <label style={labelStyle}>
-          Facebook URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.socialFacebook}
-            onChange={(e) => setForm((prev) => ({ ...prev, socialFacebook: e.target.value }))}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Twitter URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.socialTwitter}
-            onChange={(e) => setForm((prev) => ({ ...prev, socialTwitter: e.target.value }))}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Instagram URL <span style={{ color: "#888", fontWeight: "normal" }}>(optional)</span>
-          <input
-            style={inputStyle}
-            type="text"
-            placeholder="https://…"
-            value={form.socialInstagram}
-            onChange={(e) => setForm((prev) => ({ ...prev, socialInstagram: e.target.value }))}
-          />
-        </label>
+        <FormField
+          label="Contact Email"
+          htmlFor="settings-contact-email"
+          type="email"
+          required
+          hint="Where Contact / Work With Me enquiries are sent."
+          value={form.contactEmail}
+          onChange={setField("contactEmail")}
+        />
       </section>
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        <button type="submit" style={buttonStyle} disabled={saving}>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Social Links</h2>
+        <p className={styles.sectionHint}>
+          Used in the header, footer and sidebar social widgets — one place, no duplicates.
+        </p>
+
+        <FormField
+          label="Facebook URL"
+          htmlFor="settings-facebook"
+          placeholder="https://…"
+          value={form.socialFacebook}
+          onChange={setField("socialFacebook")}
+        />
+        <FormField
+          label="Twitter URL"
+          htmlFor="settings-twitter"
+          placeholder="https://…"
+          value={form.socialTwitter}
+          onChange={setField("socialTwitter")}
+        />
+        <FormField
+          label="Instagram URL"
+          htmlFor="settings-instagram"
+          placeholder="https://…"
+          value={form.socialInstagram}
+          onChange={setField("socialInstagram")}
+        />
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Footer</h2>
+
+        <FormField
+          label="Footer Text"
+          htmlFor="settings-footer-text"
+          as="textarea"
+          hint="The short 'About' blurb in the footer."
+          value={form.footerText}
+          onChange={setField("footerText")}
+        />
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>SEO Defaults</h2>
+
+        <FormField
+          label="Default Meta Description"
+          htmlFor="settings-meta-description"
+          as="textarea"
+          hint="Fallback description shown in search results and social previews for pages that don't set their own. Posts still use their own short description."
+          value={form.metaDescription}
+          onChange={setField("metaDescription")}
+        />
+
+        <ImageUpload
+          label="Default Social Share Image (OG image)"
+          value={form.defaultOgImageUrl}
+          onChange={setField("defaultOgImageUrl")}
+        />
+      </section>
+
+      <div className={styles.formActions}>
+        <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
+        </Button>
       </div>
     </form>
   );

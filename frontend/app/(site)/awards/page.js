@@ -4,14 +4,19 @@ import PageHeader from "@/components/public/PageHeader";
 import AwardCard from "@/components/public/AwardCard";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicAwards } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 import gridStyles from "@/components/public/Grid.module.css";
 
-export const metadata = buildMetadata({
-  path: "/awards",
-  title: "Mentions, Awards & Accolades",
-  description: "Recognition, features and mentions for Explore N Bite.",
-});
+export async function generateMetadata() {
+  const { siteName, ogImage } = await getSeoDefaults();
+  return buildMetadata({
+    path: "/awards",
+    title: "Mentions, Awards & Accolades",
+    description: `Recognition, features and mentions for ${siteName}.`,
+    defaultImage: ogImage,
+    siteName,
+  });
+}
 
 // Structured Award CMS model, same reasoning as /books — see that page's
 // comment.

@@ -21,6 +21,12 @@ async function parseJsonSafe(res) {
   }
 }
 
+const BADGE_SLOT_LABELS = {
+  award_photo: "Award Photo",
+  tripoto: "Tripoto",
+  indiblogger: "IndiBlogger",
+};
+
 function formatDate(iso) {
   if (!iso) return "—";
   const date = new Date(iso);
@@ -118,6 +124,16 @@ export default function AwardsManager() {
         ),
     },
     { key: "title", header: "Title", render: (award) => <span className={styles.titleCell}>{award.title}</span> },
+    {
+      key: "badgeSlot",
+      header: "Sidebar Badge",
+      render: (award) =>
+        award.badgeSlot && award.badgeSlot !== "none" ? (
+          <span className={styles.titleCell}>{BADGE_SLOT_LABELS[award.badgeSlot] ?? award.badgeSlot}</span>
+        ) : (
+          <span className={styles.muted}>—</span>
+        ),
+    },
     {
       key: "sourceLink",
       header: "Source Link",

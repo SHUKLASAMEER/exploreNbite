@@ -34,6 +34,23 @@ export async function getPublicSettings() {
   }
 }
 
+// Returns { config, error }. `config` is { [layout]: [{ widgetKey, enabled }] }
+// — the admin-managed sidebar widget composition per layout (GET /api/sidebar).
+// null + a populated `error` on failure; the Sidebar component falls back to
+// its built-in default composition in that case.
+export async function getPublicSidebarConfig() {
+  try {
+    const res = await serverApiFetch("/api/sidebar");
+    const data = await parseJsonSafe(res);
+    if (!res.ok) {
+      return { config: null, error: data?.error?.message ?? "Failed to load the sidebar configuration." };
+    }
+    return { config: data?.config ?? null, error: null };
+  } catch {
+    return { config: null, error: "Failed to load the sidebar configuration." };
+  }
+}
+
 // Returns { menuItems, error }. `menuItems` is [] for "no items configured
 // yet" (a legitimate empty state) vs null + a populated `error` for "the
 // request itself failed" — callers distinguish the two rather than treating

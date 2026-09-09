@@ -6,10 +6,19 @@
 // than silently proxying to localhost.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_URL) {
-  throw new Error(
-    "NEXT_PUBLIC_API_URL is required for a production build (the frontend has no API to talk to otherwise)."
-  );
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is required for a production build (the frontend has no API to talk to otherwise)."
+    );
+  }
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(process.env.NEXT_PUBLIC_API_URL)) {
+    // Warn, not throw — `next build` always sets NODE_ENV=production, so a
+    // local build check with a localhost .env.local must still run.
+    console.warn(
+      "⚠  NEXT_PUBLIC_API_URL points at localhost in a production build — set it to the API's public origin before deploying."
+    );
+  }
 }
 
 const nextConfig = {

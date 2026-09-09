@@ -25,9 +25,16 @@ const emptyForm = {
   title: "",
   slug: "",
   content: "",
+  pageType: "standard",
   showInMenu: false,
   menuPosition: "",
 };
+
+const PAGE_TYPE_OPTIONS = [
+  { value: "standard", label: "Standard" },
+  { value: "contact", label: "Contact" },
+  { value: "work_with_me", label: "Work With Me" },
+];
 
 export default function PageForm({ mode, pageId }) {
   const router = useRouter();
@@ -61,6 +68,7 @@ export default function PageForm({ mode, pageId }) {
           title: page.title,
           slug: page.slug,
           content: page.content,
+          pageType: page.pageType ?? "standard",
           showInMenu: page.showInMenu,
           menuPosition: page.menuPosition === null || page.menuPosition === undefined ? "" : String(page.menuPosition),
         });
@@ -86,6 +94,7 @@ export default function PageForm({ mode, pageId }) {
       title: form.title,
       slug: form.slug,
       content: form.content,
+      pageType: form.pageType,
       showInMenu: form.showInMenu,
       menuPosition: form.menuPosition === "" ? null : Number(form.menuPosition),
     };
@@ -159,6 +168,25 @@ export default function PageForm({ mode, pageId }) {
           value={form.slug}
           onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
         />
+
+        <FormField
+          label="Page Type"
+          htmlFor="page-type"
+          hint="Controls whether an enquiry form is shown below the content. Not affected by the slug or title — renaming the page keeps its form."
+        >
+          <select
+            id="page-type"
+            className={styles.select}
+            value={form.pageType}
+            onChange={(e) => setForm((prev) => ({ ...prev, pageType: e.target.value }))}
+          >
+            {PAGE_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </FormField>
       </section>
 
       <section className={styles.section}>

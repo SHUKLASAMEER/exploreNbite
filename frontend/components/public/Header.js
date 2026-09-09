@@ -11,18 +11,14 @@ import HeaderClient from "./HeaderClient";
 // HeaderClient, a Client Component, since a Server Component can't read the
 // current pathname.
 //
-// The social-icon strip is derived from the same Settings fetch already
-// happening here — no extra request. Settings has no tagline field
-// (prisma/schema.prisma), so the tagline below is the same static copy the
-// reference mockups use, not admin-editable content.
-const TAGLINE = "Travel and explore off-beat destinations";
-
-// Settings has no hero-image field (this is fixed brand content, not
-// admin-editable CMS data). This is the live site's own hero photo
-// (explorenbite.com's `.entry-header` background), now hosted locally in
-// frontend/public/ so the masthead has no dependency on the old WordPress
-// server.
-const HERO_IMAGE_URL = "/hero-bhadkeshwar-mahadev.jpg";
+// Hero tagline + image are admin-editable (Settings.tagline /
+// Settings.heroImageUrl — see the admin Settings screen). These constants are
+// only the fallbacks used when the field is blank: the tagline the reference
+// mockups use, and the live site's own hero photo (explorenbite.com's
+// `.entry-header` background) now bundled in frontend/public/ so the masthead
+// never depends on the old WordPress server or renders empty.
+const FALLBACK_TAGLINE = "Travel and explore off-beat destinations";
+const FALLBACK_HERO_IMAGE_URL = "/hero-bhadkeshwar-mahadev.jpg";
 
 export default async function Header() {
   const [{ settings }, { menuItems, error: menuError }] = await Promise.all([
@@ -49,8 +45,8 @@ export default async function Header() {
     <HeaderClient
       siteTitle={settings?.siteTitle ?? "Explore N Bite"}
       logoUrl={settings?.logoUrl ?? null}
-      tagline={TAGLINE}
-      heroImageUrl={HERO_IMAGE_URL}
+      tagline={settings?.tagline?.trim() || FALLBACK_TAGLINE}
+      heroImageUrl={settings?.heroImageUrl?.trim() || FALLBACK_HERO_IMAGE_URL}
       navTree={navTree}
       navError={menuError}
       socialLinks={buildSocialLinks(settings)}

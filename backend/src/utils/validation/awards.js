@@ -7,6 +7,11 @@ const TITLE_MAX = 200;
 const IMAGE_URL_MAX = 500;
 const SOURCE_LINK_MAX = 500;
 
+// Keep in sync with enum AwardBadgeSlot in prisma/schema.prisma. The public
+// sidebar selects its badges by this value (see Sidebar.js) instead of
+// matching award titles / links.
+const BADGE_SLOTS = ["none", "award_photo", "tripoto", "indiblogger"];
+
 function isValidUrl(value) {
   try {
     const parsed = new URL(value);
@@ -58,6 +63,15 @@ function parseAwardInput(body, mode) {
     }
   }
 
+  if (has("badgeSlot")) {
+    const raw = typeof input.badgeSlot === "string" ? input.badgeSlot.trim() : "";
+    const slot = raw || "none";
+    if (!BADGE_SLOTS.includes(slot)) {
+      throw new ValidationError(`Badge slot must be one of: ${BADGE_SLOTS.join(", ")}.`);
+    }
+    result.badgeSlot = slot;
+  }
+
   if (has("dateReceived")) {
     // Award.dateReceived is `@db.Date` (date only, no time component).
     const raw = input.dateReceived;
@@ -75,4 +89,9 @@ function parseAwardInput(body, mode) {
   return result;
 }
 
-module.exports = { parseAwardInput };
+// award_photo / tripoto / indiblogger are single-occupant sidebar slots;
+// `none` is unrestricted. MySQL can't express a partial unique index, so the
+// service enforces this (see award.service.js).
+const EXCLUSIVE_BADGE_SLOTS = ["award_photo", "tripoto", "indiblogger"];
+
+module.exports = { parseAwardInput, EXCLUSIVE_BADGE_SLOTS };

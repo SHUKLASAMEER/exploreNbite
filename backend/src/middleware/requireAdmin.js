@@ -5,8 +5,7 @@ const { env } = require("../config/env");
 const SESSION_COOKIE_NAME = "admin_session";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEMPORARY LOCAL DEVELOPMENT ADMIN BYPASS
-// REMOVE/DISABLE BEFORE PRODUCTION
+// LOCAL DEVELOPMENT ADMIN BYPASS  (development convenience only)
 //
 // While the API runs in local development, an admin request that has NO valid
 // session is allowed through as the first admin in the database, so the admin
@@ -17,20 +16,22 @@ const SESSION_COOKIE_NAME = "admin_session";
 //   • the bypass only rescues the "no valid session" branch below.
 //
 // It activates ONLY when BOTH are true:
-//   1. env.nodeEnv === "development"  (never "production", never "test"), and
-//   2. the request's Host header is a localhost address.
-// `trust proxy` is not enabled app-wide (see middleware/rateLimit.js), so
-// req.hostname is the literal Host header — in a real deployment that is the
-// public domain, so condition 2 fails there even if NODE_ENV were mis-set.
+//   1. env.adminDevBypass === true  — the single gate in config/env.js. That
+//      is `NODE_ENV === "development" && ADMIN_DEV_BYPASS !== "false"`, and it
+//      is ALWAYS false in production (a production start with the flag on
+//      fails fast). This is the fail-closed guarantee: production cannot use
+//      the bypass even if NODE_ENV is unexpected.
+//   2. the request's Host header is a localhost address. `trust proxy` is not
+//      enabled app-wide (see middleware/rateLimit.js), so req.hostname is the
+//      literal Host header — a real deployment's public domain fails this
+//      belt-and-suspenders check too.
 //
-// Escape hatch without deleting this code: set ADMIN_DEV_BYPASS=off in
-// backend/.env.
+// To disable it in local dev: set ADMIN_DEV_BYPASS=false in backend/.env.
 // ─────────────────────────────────────────────────────────────────────────────
 const LOCALHOST_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 function isLocalDevAdminBypass(req) {
-  if (env.nodeEnv !== "development") return false;
-  if (process.env.ADMIN_DEV_BYPASS === "off") return false;
+  if (!env.adminDevBypass) return false;
   const host = String(req.hostname || "").toLowerCase();
   return LOCALHOST_HOSTS.has(host);
 }
@@ -47,11 +48,10 @@ async function requireAdmin(req, res, next) {
     const payload = token ? verifyAdminToken(token) : null;
 
     if (!payload?.adminId) {
-      // TEMPORARY LOCAL DEVELOPMENT ADMIN BYPASS — REMOVE/DISABLE BEFORE
-      // PRODUCTION. See the note above isLocalDevAdminBypass(). Only reached
-      // when there is no valid session, and only passes in local dev on a
-      // localhost Host. Production / non-localhost falls straight through to
-      // the 401 below, exactly as before.
+      // LOCAL DEVELOPMENT ADMIN BYPASS — see the note above
+      // isLocalDevAdminBypass(). Only reached when there is no valid session,
+      // and only passes in local dev on a localhost Host. Production /
+      // non-localhost falls straight through to the 401 below.
       if (isLocalDevAdminBypass(req)) {
         const devAdmin = await prisma.admin.findFirst({
           orderBy: { id: "asc" },

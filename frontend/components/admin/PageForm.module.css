@@ -24,6 +24,22 @@
   margin: 0;
 }
 
+.select {
+  font-family: var(--admin-font-sans);
+  font-size: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  width: 100%;
+}
+
+.select:focus {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: -1px;
+}
+
 .checkboxLabel {
   display: flex;
   align-items: center;

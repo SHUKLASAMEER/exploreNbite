@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require("@prisma/client");
+const { defaultRows } = require("../src/config/sidebarWidgets");
 
 const prisma = new PrismaClient();
 
@@ -59,11 +60,26 @@ async function main() {
     create: {
       id: 1,
       siteTitle: "Explore N Bite",
+      tagline: "Travel and explore off-beat destinations",
+      heroImageUrl: "/hero-bhadkeshwar-mahadev.jpg",
       contactEmail: adminEmail,
       footerText: `Copyright © ${new Date().getFullYear()}. Explore N Bite.`,
+      metaDescription: "Offbeat travel stories and food, one bite at a time — by Sweta Papaiyawala.",
     },
   });
   console.log("Settings row ready.");
+
+  // Sidebar widget config — one row per (layout, widget) from the code
+  // defaults (src/config/sidebarWidgets.js). Idempotent via the
+  // (layout, widgetKey) unique key.
+  for (const row of defaultRows()) {
+    await prisma.sidebarWidgetSetting.upsert({
+      where: { layout_widgetKey: { layout: row.layout, widgetKey: row.widgetKey } },
+      update: {},
+      create: row,
+    });
+  }
+  console.log("Sidebar widget settings ready.");
 }
 
 main()

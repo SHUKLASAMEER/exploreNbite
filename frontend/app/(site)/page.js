@@ -3,14 +3,18 @@ import Sidebar from "@/components/public/Sidebar";
 import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import { getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
-import { SITE_NAME } from "@/lib/siteConfig";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 
-export const metadata = buildMetadata({
-  path: "/",
-  title: { absolute: `${SITE_NAME} — Offbeat India Travel & Food` },
-  description: "Offbeat travel stories and food, one bite at a time — by Sweta Papaiyawala.",
-});
+export async function generateMetadata() {
+  const { siteName, tagline, description, ogImage } = await getSeoDefaults();
+  return buildMetadata({
+    path: "/",
+    title: { absolute: tagline ? `${siteName} — ${tagline}` : siteName },
+    description,
+    defaultImage: ogImage,
+    siteName,
+  });
+}
 
 // Home = the blog index (all published posts, newest first, paginated) —
 // same as the live site, which has no separate "/blog" route; the site

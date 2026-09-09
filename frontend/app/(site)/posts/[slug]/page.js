@@ -8,7 +8,7 @@ import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 import { formatDate } from "@/lib/formatDate";
 import styles from "@/components/public/SinglePost.module.css";
 import commentStyles from "@/components/public/Comments.module.css";
@@ -17,11 +17,14 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const { post } = await getPublicPostBySlug(slug);
   if (!post) return {};
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: `/posts/${post.slug}`,
     title: post.title,
-    description: post.shortDescription ?? undefined,
+    description: post.shortDescription ?? description,
     image: post.featuredImageUrl ?? undefined,
+    defaultImage: ogImage,
+    siteName,
     type: "article",
     publishedTime: post.publishDate ?? undefined,
     modifiedTime: post.updatedAt ?? post.publishDate ?? undefined,
