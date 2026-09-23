@@ -5,7 +5,8 @@ import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicCategoryBySlug, getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildBreadcrumbJsonLd, buildCollectionPageJsonLd, getSeoDefaults } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
@@ -48,6 +49,19 @@ export default async function CategoryPage({ params, searchParams }) {
   // plain date-desc on the live site too.
   const { posts, pagination, error } = await getPublicPosts({ category: category.id, page, limit: 10 });
 
+  // Home -> Category breadcrumb + a CollectionPage node for the archive.
+  const jsonLd = [
+    buildBreadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: category.name, path: `/category/${category.slug}` },
+    ]),
+    buildCollectionPageJsonLd({
+      name: category.name,
+      description: category.description || undefined,
+      path: `/category/${category.slug}`,
+    }),
+  ];
+
   return (
     // No page title/description here — the live site's category archives
     // (/category/home/, /category/must-visit/) render straight into the
@@ -55,6 +69,7 @@ export default async function CategoryPage({ params, searchParams }) {
     // live HTML; only the <title> tag and browser tab carry the category
     // name). Matching that exactly rather than guessing a header belongs.
     <TwoColumnLayout sidebar={<Sidebar layout="archive" />}>
+      <JsonLd data={jsonLd} />
       <PostList
         posts={posts}
         error={error}

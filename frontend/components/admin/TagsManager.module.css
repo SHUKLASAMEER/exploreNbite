@@ -1,0 +1,144 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.formCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--admin-shadow-sm);
+  max-width: 480px;
+  margin-bottom: 1.5rem;
+}
+
+.formTitle {
+  font-family: var(--admin-font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0;
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nameCell {
+  font-weight: 600;
+  color: var(--admin-heading);
+}
+
+.slug {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  background: var(--admin-accent-soft);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--admin-radius-sm);
+}
+
+.usage {
+  font-size: 0.82rem;
+  color: var(--admin-text);
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--admin-text-muted);
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.2rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
+
+/* --- merge dialog (matches ConfirmDialog's overlay/dialog treatment) --- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 13, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 200;
+}
+
+.dialog {
+  background: var(--admin-surface);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: var(--admin-shadow-overlay);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mergeHelp {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.mergeResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.mergeResults li + li {
+  border-top: 1px solid var(--admin-border);
+}
+
+.mergeResults button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--admin-text);
+  cursor: pointer;
+}
+
+.mergeResults button:hover {
+  background: var(--admin-accent-soft);
+}
+
+.mergeChosen {
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.mergeClear {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--admin-accent);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mergeError {
+  font-size: 0.82rem;
+  color: var(--admin-danger);
+  margin: 0;
+}

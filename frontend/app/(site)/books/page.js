@@ -4,7 +4,8 @@ import PageHeader from "@/components/public/PageHeader";
 import BookCard from "@/components/public/BookCard";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicBooks } from "@/lib/publicApi";
-import { buildMetadata, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildBreadcrumbJsonLd, buildBookListJsonLd, getSeoDefaults } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import gridStyles from "@/components/public/Grid.module.css";
 
 export async function generateMetadata() {
@@ -25,8 +26,19 @@ export async function generateMetadata() {
 export default async function BooksPage() {
   const { books, error } = await getPublicBooks();
 
+  // Home -> My Books breadcrumb + an ItemList of Book entities (real Book
+  // CMS model: title / cover / description / year / buy links).
+  const jsonLd = [
+    buildBreadcrumbJsonLd([
+      { name: "Home", path: "/" },
+      { name: "My Books", path: "/books" },
+    ]),
+    buildBookListJsonLd({ books, path: "/books" }),
+  ];
+
   return (
     <TwoColumnLayout sidebar={<Sidebar layout="page" />}>
+      <JsonLd data={jsonLd} />
       <PageHeader title="My Books" />
       {error ? (
         <StateMessage kind="error" title="Couldn't load books.">

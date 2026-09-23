@@ -3,6 +3,7 @@ import {
   FileText,
   FolderTree,
   Files,
+  Tags,
   Users,
   Image as ImageIcon,
   Award,
@@ -28,6 +29,7 @@ export const NAV_GROUPS = [
     items: [
       { href: "/admin/posts", label: "Posts", icon: FileText },
       { href: "/admin/categories", label: "Categories", icon: FolderTree },
+      { href: "/admin/tags", label: "Tags", icon: Tags },
       { href: "/admin/pages", label: "Pages", icon: Files },
       { href: "/admin/authors", label: "Authors", icon: Users },
       { href: "/admin/media", label: "Media", icon: ImageIcon },

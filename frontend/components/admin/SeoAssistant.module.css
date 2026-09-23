@@ -1,0 +1,101 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--admin-font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.muted {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.error {
+  font-size: 0.82rem;
+  color: var(--admin-danger);
+  margin: 0;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--admin-border);
+  padding-top: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fieldLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin: 0;
+}
+
+.currentValue {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  margin: 0;
+  word-break: break-word;
+}
+
+.suggestedValue {
+  font-size: 0.85rem;
+  color: var(--admin-text);
+  margin: 0;
+  word-break: break-word;
+}
+
+.chipList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  font-size: 0.78rem;
+  background: var(--admin-accent-soft);
+  color: var(--admin-heading);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.suggestionList {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--admin-text);
+}

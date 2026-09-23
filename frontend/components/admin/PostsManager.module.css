@@ -34,3 +34,27 @@
   gap: 0.25rem;
   flex-wrap: nowrap;
 }
+
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: var(--admin-accent-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.bulkCount {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--admin-heading);
+  margin-right: 0.25rem;
+}
+
+.bulkErrorInline {
+  font-size: 0.82rem;
+  color: var(--admin-danger);
+}

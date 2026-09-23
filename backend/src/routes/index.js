@@ -29,6 +29,7 @@ const publicAwardRoutes = require("./publicAward.routes");
 const publicPageRoutes = require("./publicPage.routes");
 const contactRoutes = require("./contact.routes");
 const contactMessageRoutes = require("./contactMessage.routes");
+const aiRoutes = require("./ai.routes");
 
 const router = express.Router();
 
@@ -99,5 +100,6 @@ router.use("/admin/media", requireAdmin, mediaRoutes);
 router.use("/admin/settings", requireAdmin, settingsRoutes);
 router.use("/admin/menu", requireAdmin, menuItemRoutes);
 router.use("/admin/sidebar", requireAdmin, sidebarRoutes);
+router.use("/admin/ai", requireAdmin, aiRoutes);
 
 module.exports = router;

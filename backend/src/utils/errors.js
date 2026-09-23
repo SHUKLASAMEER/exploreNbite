@@ -34,4 +34,29 @@ class UnauthorizedError extends AppError {
   }
 }
 
-module.exports = { AppError, NotFoundError, ValidationError, ConflictError, UnauthorizedError };
+// AI SEO Suggestions: no provider is configured/implemented yet (see
+// services/ai/provider.js). 503 — the feature is temporarily/structurally
+// unavailable, not a client mistake.
+class AiUnavailableError extends AppError {
+  constructor(message = "AI suggestions are not available right now.") {
+    super(message, 503, "AI_UNAVAILABLE");
+  }
+}
+
+// The provider returned something that didn't pass structural validation
+// (wrong types, missing fields, etc). Never exposes the raw provider output.
+class AiResponseError extends AppError {
+  constructor(message = "The AI response could not be validated.") {
+    super(message, 502, "AI_INVALID_RESPONSE");
+  }
+}
+
+module.exports = {
+  AppError,
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  UnauthorizedError,
+  AiUnavailableError,
+  AiResponseError,
+};

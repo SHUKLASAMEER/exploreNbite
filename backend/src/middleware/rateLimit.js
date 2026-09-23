@@ -93,4 +93,15 @@ const publicWriteRateLimit = rateLimit({
   message: "You're doing that too often. Please wait a few minutes and try again.",
 });
 
-module.exports = { rateLimit, loginRateLimit, publicWriteRateLimit };
+// AI SEO Suggestions — admin-only, but generation is potentially expensive
+// once a real provider is wired, and rapid clicking must not spam it. Fixed
+// (not env-tunable) since this isn't a public-facing limit to tune per
+// deployment; bump the constant directly if it's ever too tight.
+const aiSeoRateLimit = rateLimit({
+  key: "ai-seo",
+  windowMs: 60_000,
+  max: 5,
+  message: "Too many AI suggestion requests. Please wait a minute and try again.",
+});
+
+module.exports = { rateLimit, loginRateLimit, publicWriteRateLimit, aiSeoRateLimit };

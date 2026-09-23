@@ -155,10 +155,11 @@ function parseTagName(value) {
 /**
  * Takes the raw `tags` field from a request body — an array of tag name
  * strings, e.g. ["Travel", "gujarat"] — and resolves it to an array of tag
- * ids, creating any tag that doesn't exist yet. Existing tags are matched
- * by slug (not raw name) so "Travel" and "travel" resolve to the same tag
- * instead of creating a near-duplicate. Never renames an existing tag just
- * because it was resubmitted with different casing.
+ * ids, creating any tag that doesn't exist yet. An existing tag is matched
+ * first by exact name (case-insensitive) and then by slug, so "Travel" and
+ * "travel" resolve to the same tag, and a tag that was renamed in the Tag
+ * Manager (its slug preserved) is still reused rather than duplicated.
+ * Never renames an existing tag just because it was resubmitted.
  */
 async function resolveTagIds(prisma, rawTags) {
   if (rawTags === undefined) return undefined;
@@ -177,13 +178,22 @@ async function resolveTagIds(prisma, rawTags) {
 
   const tagIds = [];
   for (const { name, slug } of cleaned) {
-    // Atomic find-or-create keyed on the unique slug column — this is what
-    // guarantees no duplicate tags, even under concurrent requests.
-    const tag = await prisma.tag.upsert({
-      where: { slug },
-      update: {},
-      create: { name, slug },
-    });
+    // Prefer an exact name match first (MySQL's ci collation makes this
+    // case-insensitive). This is what keeps a *renamed* tag stable: the Tag
+    // Manager preserves a tag's slug on a plain rename, so re-saving a post
+    // that carries the tag — the editor sends the tag's (new) name — would
+    // otherwise slugify the new name, miss the slug, and spawn a divergent
+    // tag. Matching by name reuses the real record instead.
+    let tag = await prisma.tag.findFirst({ where: { name }, orderBy: { id: "asc" } });
+    if (!tag) {
+      // Atomic find-or-create keyed on the unique slug column — guarantees
+      // no duplicate tags even under concurrent requests.
+      tag = await prisma.tag.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug },
+      });
+    }
     tagIds.push(tag.id);
   }
   return tagIds;

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Plus, ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { buildTagContext, rankTags, tagSlug } from "@/lib/rankTags";
 import { generateTagCandidates } from "@/lib/generateTagCandidates";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import RevisionHistory from "@/components/admin/RevisionHistory";
+import SeoAssistant from "@/components/admin/SeoAssistant";
 import PageHeader from "@/components/admin/ui/PageHeader";
 import Button from "@/components/admin/ui/Button";
 import FormField from "@/components/admin/ui/FormField";
@@ -133,8 +135,57 @@ export default function PostForm({ mode, postId }) {
     });
   }, [tagContextInput, existingSlugs, selectedSlugs]);
 
+  // Data sent to the AI SEO Suggestions endpoint — SEO-relevant fields only
+  // (never credentials/cookies/other posts), recomputed from current form
+  // state each render so "Generate" always analyzes the live draft.
+  const seoAssistantSnapshot = useMemo(
+    () => ({
+      title: form.title,
+      shortDescription: form.shortDescription,
+      content: form.content,
+      category: categories.find((c) => String(c.id) === form.categoryId)?.name ?? "",
+      tags: form.tags,
+      slug: form.slug,
+    }),
+    [form.title, form.shortDescription, form.content, form.categoryId, form.tags, form.slug, categories]
+  );
+
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // ---- Autosave (draft workspace only — see backend post.service.js#autosave)
+  // "idle": nothing to save yet (just loaded, or a save/autosave just landed
+  // and nothing has changed since). "unsaved": changed, waiting out the
+  // debounce. "saving" / "saved" / "error" are the request outcome.
+  const [autosaveState, setAutosaveState] = useState("idle");
+  const [autosaveNotice, setAutosaveNotice] = useState(""); // e.g. a "stale" warning
+  const [revisionRefreshToken, setRevisionRefreshToken] = useState(0);
+  // The Post.updatedAt this editor session was loaded with — sent back on
+  // every autosave so the server can tell us if a manual save landed
+  // elsewhere in the meantime (Section 13: a timestamp check, not a lock).
+  // Only ever read/written from event handlers and effects, never during
+  // render, so a plain ref is appropriate here.
+  const postUpdatedAtRef = useRef(null);
+  // The last content snapshot that is already safely persisted — either
+  // from the initial load or the most recent successful autosave/manual
+  // save. Compared against the live form to decide (a) whether there's
+  // anything to autosave at all, and (b) the "Unsaved changes" indicator —
+  // both computed during render, so this has to be real state, not a ref.
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState(null);
+
+  function snapshotOf(f) {
+    return {
+      title: f.title,
+      slug: f.slug,
+      shortDescription: f.shortDescription,
+      content: f.content,
+      featuredImageUrl: f.featuredImageUrl,
+      categoryId: f.categoryId ? Number(f.categoryId) : null,
+      authorId: f.authorId ? Number(f.authorId) : null,
+      categoryIds: f.categoryIds.map(Number).sort((a, b) => a - b),
+      tags: [...f.tags].map((t) => t.toLowerCase()).sort(),
+    };
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -172,7 +223,7 @@ export default function PostForm({ mode, postId }) {
           const postData = await postRes.json();
           const post = postData.post;
           if (cancelled) return;
-          setForm({
+          const loadedForm = {
             title: post.title,
             slug: post.slug,
             categoryId: String(post.category.id),
@@ -190,7 +241,14 @@ export default function PostForm({ mode, postId }) {
             sticky: post.sticky ?? false,
             publishDate: toDatetimeLocalValue(post.publishDate),
             tags: post.tags.map((t) => t.name),
-          });
+          };
+          setForm(loadedForm);
+          // Baseline for autosave comparison + staleness — editing always
+          // starts from whatever is currently live (published or draft);
+          // autosave only ever records what changes FROM here.
+          postUpdatedAtRef.current = post.updatedAt;
+          setLastSavedSnapshot(snapshotOf(loadedForm));
+          setAutosaveState("idle");
         }
       } catch (err) {
         if (!cancelled) {
@@ -206,6 +264,160 @@ export default function PostForm({ mode, postId }) {
       cancelled = true;
     };
   }, [isEditing, postId]);
+
+  // Derived, not stored: whether the live form differs from the last thing
+  // that was actually persisted (initial load, last autosave, or last
+  // manual save). Drives both the "Unsaved changes" indicator and whether
+  // the debounce below bothers scheduling an autosave at all.
+  const hasUnsavedChanges =
+    isEditing &&
+    !loading &&
+    Boolean(lastSavedSnapshot) &&
+    JSON.stringify(snapshotOf(form)) !== JSON.stringify(lastSavedSnapshot);
+
+  // Autosave — a debounced (3s of no further edits) snapshot of the DRAFT
+  // workspace only. This never calls the create/update endpoints and never
+  // touches the live post; see backend post.service.js#autosave. Only
+  // fires while editing an EXISTING post (a brand-new, never-saved post has
+  // no id to attach a revision to — its first explicit Save is what creates
+  // it, unchanged). Keyed on exactly the fields a revision stores, so
+  // toggling status/sticky/allowComments/publishDate alone never triggers
+  // an autosave network call.
+  const tagsKey = form.tags.join("");
+  const categoryIdsKey = form.categoryIds.join(",");
+  useEffect(function scheduleAutosave() {
+    if (!isEditing || !postId || loading || !hasUnsavedChanges) return undefined;
+    const timer = setTimeout(() => {
+      // runAutosave is a hoisted function declaration (defined just below,
+      // read via closure each time this effect re-runs), so it always sees
+      // the latest form/lastSavedSnapshot despite this call preceding its
+      // textual declaration.
+      // eslint-disable-next-line react-hooks/immutability
+      runAutosave(snapshotOf(form));
+    }, 3000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isEditing,
+    postId,
+    loading,
+    hasUnsavedChanges,
+    form.title,
+    form.slug,
+    form.categoryId,
+    categoryIdsKey,
+    form.authorId,
+    form.featuredImageUrl,
+    form.shortDescription,
+    form.content,
+    tagsKey,
+  ]);
+
+  async function runAutosave(snapshot) {
+    if (lastSavedSnapshot && JSON.stringify(lastSavedSnapshot) === JSON.stringify(snapshot)) {
+      // Nothing meaningful changed since the last save — skip the request
+      // entirely (Section 5: avoid unnecessary API traffic; Section 9:
+      // don't create a duplicate snapshot for identical content).
+      return;
+    }
+
+    setAutosaveState("saving");
+    try {
+      const res = await apiFetch(`/api/admin/posts/${postId}/autosave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          slug: form.slug,
+          categoryId: form.categoryId ? Number(form.categoryId) : undefined,
+          categoryIds: form.categoryIds.map(Number),
+          authorId: form.authorId ? Number(form.authorId) : undefined,
+          featuredImageUrl: form.featuredImageUrl,
+          shortDescription: form.shortDescription,
+          content: form.content,
+          tags: form.tags,
+          // Lets the server tell us if a manual save landed elsewhere since
+          // this editor loaded (Section 13) — informational only, autosave
+          // still always succeeds either way.
+          baseUpdatedAt: postUpdatedAtRef.current,
+        }),
+      });
+      const data = await parseJsonSafe(res);
+      if (!res.ok) {
+        // A failed autosave must never look like a successful one, and must
+        // never block continued editing — nothing here disables any input.
+        setAutosaveState("error");
+        return;
+      }
+      setLastSavedSnapshot(snapshot);
+      setAutosaveState("idle");
+      setAutosaveNotice(
+        data.stale
+          ? "This post was saved elsewhere since you opened it. Your autosaved draft is safe — review before publishing."
+          : ""
+      );
+      setRevisionRefreshToken((n) => n + 1);
+    } catch {
+      setAutosaveState("error");
+    }
+  }
+
+  // Loads a revision's content back into the editor as an in-progress
+  // draft. This ONLY calls setForm — it never calls the save/publish
+  // endpoint, so a published post's live content is untouched until the
+  // admin explicitly clicks Save. status/publishDate/allowComments/sticky
+  // are deliberately left exactly as they currently are in the editor.
+  function handleRestoreRevision(revision) {
+    setForm((prev) => ({
+      ...prev,
+      title: revision.title ?? "",
+      slug: revision.slug ?? "",
+      shortDescription: revision.shortDescription ?? "",
+      content: revision.content ?? "",
+      featuredImageUrl: revision.featuredImageUrl ?? "",
+      categoryId: revision.categoryId ? String(revision.categoryId) : prev.categoryId,
+      categoryIds: (revision.categoryIds ?? []).map(String),
+      authorId: revision.authorId ? String(revision.authorId) : prev.authorId,
+      tags: revision.tagNames ?? [],
+    }));
+    showToast(
+      `Restored the ${revision.type === "manual" ? "manual save" : "autosave"} from ${new Date(
+        revision.createdAt
+      ).toLocaleString()} into the editor. Click Save to keep it.`
+    );
+  }
+
+  // Previews a past revision using the exact same admin-only preview route
+  // as the live editor's own Preview button (see handlePreview below) — no
+  // new preview mechanism, just a different source payload. Opened in its
+  // own named tab so it can never be confused with (or silently replace) an
+  // already-open live-draft preview.
+  function handlePreviewRevision(revision) {
+    const category = categories.find((c) => c.id === revision.categoryId) ?? null;
+    const author = authors.find((a) => a.id === revision.authorId) ?? null;
+    const payload = {
+      title: revision.title,
+      slug: revision.slug,
+      shortDescription: revision.shortDescription,
+      content: revision.content,
+      featuredImageUrl: revision.featuredImageUrl,
+      status: form.status,
+      publishDate: form.publishDate ? new Date(form.publishDate).toISOString() : null,
+      category: category ? { name: category.name, slug: category.slug } : null,
+      author: author ? { name: author.name } : null,
+      tags: revision.tagNames ?? [],
+      isEditing,
+      postId: isEditing ? postId : null,
+      savedAt: Date.now(),
+    };
+    try {
+      window.localStorage.setItem("enbite:post-preview", JSON.stringify(payload));
+    } catch {
+      showToast("Couldn't open preview (browser storage unavailable).", { type: "error" });
+      return;
+    }
+    window.open("/admin/preview", "enbitePostPreviewRevision");
+  }
 
   function selectTagByName(name) {
     setForm((prev) => {
@@ -253,6 +465,24 @@ export default function PostForm({ mode, postId }) {
       });
       const data = await parseJsonSafe(res);
       if (!res.ok) {
+        // The create endpoint now rejects a duplicate slug (409) instead of
+        // silently returning the existing tag. If that happens (another
+        // admin/tab created it since this form loaded), recover by fetching
+        // the current tag list and selecting the real record.
+        if (res.status === 409) {
+          try {
+            const listRes = await apiFetch("/api/admin/tags");
+            const listData = await parseJsonSafe(listRes);
+            const match = (listData?.tags ?? []).find((t) => tagSlug(t.name) === slug);
+            if (match) {
+              setAllTags((prev) => (prev.some((t) => t.id === match.id) ? prev : [...prev, match]));
+              selectTagByName(match.name);
+              return true;
+            }
+          } catch {
+            /* fall through to the error message below */
+          }
+        }
         setTagError(data?.error?.message ?? "Could not create this tag.");
         return false;
       }
@@ -323,6 +553,15 @@ export default function PostForm({ mode, postId }) {
 
       if (isEditing) {
         showToast("Post updated.");
+        // A manual save is itself already recorded as a "manual" revision
+        // server-side (post.service.js#update); just resync our own
+        // baseline so the "Unsaved changes" indicator and the next
+        // autosave compare against what's now actually persisted.
+        postUpdatedAtRef.current = data.post?.updatedAt ?? postUpdatedAtRef.current;
+        lastSavedSnapshotRef.current = snapshotOf(form);
+        setAutosaveState("idle");
+        setAutosaveNotice("");
+        setRevisionRefreshToken((n) => n + 1);
         setSaving(false);
       } else {
         // Created -> continue editing the now-persisted post, same pattern
@@ -503,6 +742,14 @@ export default function PostForm({ mode, postId }) {
         <RichTextEditor value={form.content} onChange={(html) => setForm((prev) => ({ ...prev, content: html }))} />
       </section>
 
+      <SeoAssistant
+        postSnapshot={seoAssistantSnapshot}
+        currentTitle={form.title}
+        currentDescription={form.shortDescription}
+        onApplyTitle={(title) => setForm((prev) => ({ ...prev, title }))}
+        onApplyDescription={(shortDescription) => setForm((prev) => ({ ...prev, shortDescription }))}
+      />
+
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Tags</h2>
 
@@ -643,6 +890,15 @@ export default function PostForm({ mode, postId }) {
         </label>
       </section>
 
+      {isEditing ? (
+        <RevisionHistory
+          postId={postId}
+          refreshToken={revisionRefreshToken}
+          onRestore={handleRestoreRevision}
+          onPreview={handlePreviewRevision}
+        />
+      ) : null}
+
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
@@ -653,6 +909,22 @@ export default function PostForm({ mode, postId }) {
         <Button type="button" variant="secondary" onClick={() => router.push("/admin/posts")} disabled={saving}>
           Cancel
         </Button>
+        {isEditing ? (
+          <span
+            className={`${styles.autosaveStatus} ${autosaveState === "error" ? styles.autosaveError : ""}`}
+            role="status"
+            aria-live="polite"
+          >
+            {autosaveState === "saving"
+              ? "Saving…"
+              : autosaveState === "error"
+                ? "Autosave failed — your edits are still here, will retry on the next change."
+                : hasUnsavedChanges
+                  ? "Unsaved changes"
+                  : "All changes saved"}
+            {autosaveNotice ? <span className={styles.autosaveNotice}> · {autosaveNotice}</span> : null}
+          </span>
+        ) : null}
       </div>
     </form>
   );

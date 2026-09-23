@@ -6,7 +6,8 @@ import ProseContent from "@/components/public/ProseContent";
 import ContactForm from "@/components/public/ContactForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPageBySlug } from "@/lib/publicApi";
-import { buildMetadata, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildBreadcrumbJsonLd, getSeoDefaults } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { stripHtmlToText } from "@/lib/text";
 
 // Generic CMS Page route — About, Contact, Work With Me, Poetry Corner,
@@ -58,8 +59,16 @@ export default async function CmsPage({ params }) {
   const hasForm = isContact || isWorkWithMe;
   const hasBody = Boolean(stripHtmlToText(page.content));
 
+  // Home -> Page breadcrumb. Pages are a flat collection (no nesting), so
+  // that two-level trail is the whole meaningful hierarchy.
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    { name: page.title, path: `/pages/${page.slug}` },
+  ]);
+
   return (
     <TwoColumnLayout sidebar={<Sidebar layout={isContact ? "contact" : "page"} />}>
+      <JsonLd data={breadcrumbJsonLd} />
       <PageHeader title={page.title} />
       {hasBody ? <ProseContent html={page.content} /> : null}
       {isWorkWithMe ? (

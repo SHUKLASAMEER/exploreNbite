@@ -8,7 +8,8 @@ import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildBlogPostingJsonLd, buildBreadcrumbJsonLd, getSeoDefaults } from "@/lib/seo";
+import JsonLd from "@/components/JsonLd";
 import { formatDate } from "@/lib/formatDate";
 import styles from "@/components/public/SinglePost.module.css";
 import commentStyles from "@/components/public/Comments.module.css";
@@ -63,11 +64,22 @@ export default async function SinglePostPage({ params }) {
     );
   }
 
-  const [{ comments, error: commentsError }, postUrl, relatedPosts] = await Promise.all([
+  const [{ comments, error: commentsError }, postUrl, relatedPosts, seo] = await Promise.all([
     getPublicComments(post.id),
     getAbsolutePostUrl(post.slug),
     getRelatedPosts(post),
+    getSeoDefaults(),
   ]);
+
+  // Structured data — BlogPosting (this is a blog) + a Home -> Category ->
+  // Post breadcrumb. Only reached for a genuinely published post (backend
+  // getBySlug forces status === "published"); a draft 404s above.
+  const articleJsonLd = buildBlogPostingJsonLd({ post, siteName: seo.siteName, logoUrl: seo.logoUrl });
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", path: "/" },
+    post.category ? { name: post.category.name, path: `/category/${post.category.slug}` } : null,
+    { name: post.title, path: `/posts/${post.slug}` },
+  ].filter(Boolean));
 
   const shareLinks = [
     { name: "Twitter", href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title)}` },
@@ -77,6 +89,7 @@ export default async function SinglePostPage({ params }) {
 
   return (
     <TwoColumnLayout sidebar={<Sidebar layout="post" excludePostId={post.id} />}>
+      <JsonLd data={[articleJsonLd, breadcrumbJsonLd]} />
       <article>
         {post.featuredImageUrl ? (
           <div className={styles.media}>

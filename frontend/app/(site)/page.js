@@ -2,8 +2,9 @@ import TwoColumnLayout from "@/components/public/TwoColumnLayout";
 import Sidebar from "@/components/public/Sidebar";
 import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
+import JsonLd from "@/components/JsonLd";
 import { getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildWebSiteJsonLd, getSeoDefaults } from "@/lib/seo";
 
 export async function generateMetadata() {
   const { siteName, tagline, description, ogImage } = await getSeoDefaults();
@@ -27,21 +28,29 @@ export default async function Home({ searchParams }) {
   // only (see lib/publicApi.js and post.service.js#list).
   const { posts, pagination, error } = await getPublicPosts({ page, limit: 10, sticky: true });
 
+  // WebSite identity + Sitelinks Search Box, from CMS settings (deduped with
+  // generateMetadata's getSeoDefaults() call within the same request).
+  const { siteName, description, logoUrl } = await getSeoDefaults();
+  const websiteJsonLd = buildWebSiteJsonLd({ siteName, description, logoUrl });
+
   return (
-    <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
-      <PostList
-        posts={posts}
-        error={error}
-        emptyTitle="No posts yet."
-        emptyText="Check back soon — new stories are on the way."
-      />
-      {pagination ? (
-        <Pagination
-          page={pagination.page}
-          totalPages={pagination.totalPages}
-          buildHref={(p) => (p === 1 ? "/" : `/?page=${p}`)}
+    <>
+      <JsonLd data={websiteJsonLd} />
+      <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
+        <PostList
+          posts={posts}
+          error={error}
+          emptyTitle="No posts yet."
+          emptyText="Check back soon — new stories are on the way."
         />
-      ) : null}
-    </TwoColumnLayout>
+        {pagination ? (
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            buildHref={(p) => (p === 1 ? "/" : `/?page=${p}`)}
+          />
+        ) : null}
+      </TwoColumnLayout>
+    </>
   );
 }

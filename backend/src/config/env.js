@@ -113,6 +113,16 @@ const env = {
     apiKey: process.env.CLOUDINARY_API_KEY ?? "",
     apiSecret: process.env.CLOUDINARY_API_SECRET ?? "",
   },
+  // --- AI provider (AI SEO Suggestions) ---------------------------------
+  // No provider is wired yet — see services/ai/provider.js. These env vars
+  // are read but currently unused by any request path; `configured` only
+  // becomes true once a real adapter is registered in that file's PROVIDERS
+  // map AND both vars are set. Never assume "configured" implies a working
+  // call exists.
+  ai: {
+    provider: process.env.AI_PROVIDER?.trim() || null,
+    apiKey: process.env.AI_API_KEY || null,
+  },
 };
 
 // Fail fast on a misconfigured production deployment rather than silently

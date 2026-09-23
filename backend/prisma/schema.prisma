@@ -131,11 +131,60 @@ model Post {
   tags       PostTag[]
   comments   Comment[]
   categories PostCategory[]
+  revisions  PostRevision[]
 
   @@index([categoryId])
   @@index([authorId])
   @@index([status, publishDate])
   @@map("posts")
+}
+
+// ---------------------------------------------------------------------------
+// Post revisions (Autosave + Revisions task)
+// ---------------------------------------------------------------------------
+// Immutable snapshots of a post's EDITABLE content only — never the live
+// Post row itself. Two sources write here:
+//   - "autosave": a debounced background snapshot from the open editor.
+//   - "manual": taken automatically right after a successful explicit
+//     create/Save, so revision history also captures every real save.
+// Restoring a revision (post.service.js#restoreRevision) only READS a row
+// and hands it back to the client editor — it never writes to Post. The
+// existing create/update path (with its existing tag/category
+// reconciliation) is still the only thing that ever persists a change to a
+// live post, exactly as before this task.
+//
+// categoryId/authorId/categoryIds are plain historical values with NO
+// foreign key — a revision is a point-in-time record, not a live relation,
+// so an old snapshot can never block deleting a category/author and needs
+// no cascade beyond its own post. tagNames stores tag NAME strings (the
+// same shape the editor already works with); restoring only ever feeds
+// them back through the existing resolveTagIds() reconciliation, so no
+// duplicate Tag/PostTag rows are possible. featuredImageUrl is a URL
+// reference only — never a copy of the underlying file.
+enum RevisionType {
+  autosave
+  manual
+}
+
+model PostRevision {
+  id               Int          @id @default(autoincrement())
+  postId           Int          @map("post_id")
+  type             RevisionType @default(autosave)
+  title            String       @db.VarChar(200)
+  slug             String       @db.VarChar(220)
+  shortDescription String?      @map("short_description") @db.VarChar(300)
+  content          String       @db.LongText
+  featuredImageUrl String?      @map("featured_image_url") @db.VarChar(500)
+  categoryId       Int?         @map("category_id")
+  categoryIds      Json?        @map("category_ids")
+  authorId         Int?         @map("author_id")
+  tagNames         Json         @map("tag_names")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@map("post_revisions")
 }
 
 // Additive extra-category links — see the schema-header note above. A row

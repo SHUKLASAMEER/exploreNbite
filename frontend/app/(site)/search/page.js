@@ -22,8 +22,11 @@ export async function generateMetadata() {
 }
 
 // Backs the sidebar's Search widget (a plain GET form to /search?q=...) —
-// reuses the public posts list endpoint's existing `search` param
-// (matches post title), no new backend endpoint needed.
+// reuses the public posts list endpoint's existing `search` param, which
+// now matches a query against the post title, description, HTML content,
+// and associated tag / category names + slugs (relevance-ordered, published
+// posts only — see backend post.service.searchPublished). Same endpoint,
+// same params, same response shape; no frontend change beyond this note.
 export default async function SearchPage({ searchParams }) {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q.trim() : "";

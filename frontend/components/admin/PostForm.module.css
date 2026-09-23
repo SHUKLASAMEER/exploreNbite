@@ -124,5 +124,21 @@
 
 .formActions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.autosaveStatus {
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+  margin-left: 0.25rem;
+}
+
+.autosaveNotice {
+  color: var(--admin-warning);
+}
+
+.autosaveError {
+  color: var(--admin-danger);
 }
