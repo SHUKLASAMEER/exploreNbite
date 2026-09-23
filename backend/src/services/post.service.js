@@ -3,6 +3,7 @@ const { parsePostInput, resolveTagIds, resolveCategoryIds, VALID_STATUSES } = re
 const { parseAutosaveInput, snapshotsEqual } = require("../utils/validation/revisions");
 const { NotFoundError, ValidationError, ConflictError } = require("../utils/errors");
 const { sanitizeContentHtml } = require("../utils/sanitizeHtml");
+const { escapeLike } = require("../utils/escapeLike");
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -161,6 +162,9 @@ async function list(query) {
 //   - Every filter is a Prisma `contains` -> a parameterised `LIKE ?`. No
 //     raw SQL, no interpolation, no injection surface. Case-insensitivity
 //     comes from the column collation (utf8mb4_*_ci), same as list().
+//   - Each term's `%`, `_` and `\` are escaped (escapeLike) before they reach
+//     the LIKE pattern, so they match literally instead of as wildcards.
+//     Relevance scoring below still uses the raw, unescaped term.
 //   - status: "published" is forced here regardless of the caller, so search
 //     can never surface a draft, its content, its tags or its slug.
 //   - A multi-word query is AND-ed across terms, each term OR-ed across the
@@ -192,12 +196,13 @@ function splitSearchTerms(raw) {
 // both as the post's primary `category` relation and via the extra
 // `post_categories` links, mirroring how list()'s category filter works.
 function searchTermClause(term) {
-  const nameOrSlug = { OR: [{ name: { contains: term } }, { slug: { contains: term } }] };
+  const pattern = escapeLike(term);
+  const nameOrSlug = { OR: [{ name: { contains: pattern } }, { slug: { contains: pattern } }] };
   return {
     OR: [
-      { title: { contains: term } },
-      { shortDescription: { contains: term } },
-      { content: { contains: term } },
+      { title: { contains: pattern } },
+      { shortDescription: { contains: pattern } },
+      { content: { contains: pattern } },
       { category: nameOrSlug },
       { categories: { some: { category: nameOrSlug } } },
       { tags: { some: { tag: nameOrSlug } } },

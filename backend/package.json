@@ -12,7 +12,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:status": "prisma migrate status",
     "prisma:studio": "prisma studio",
-    "seed": "node --env-file=.env prisma/seed.js"
+    "seed": "node --env-file=.env prisma/seed.js",
+    "test": "node --env-file-if-exists=.env --test test/*.test.js"
   },
   "prisma": {
     "seed": "node --env-file=.env prisma/seed.js"
