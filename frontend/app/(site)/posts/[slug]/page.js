@@ -91,12 +91,8 @@ export default async function SinglePostPage({ params }) {
     <TwoColumnLayout sidebar={<Sidebar layout="post" excludePostId={post.id} />}>
       <JsonLd data={[articleJsonLd, breadcrumbJsonLd]} />
       <article>
-        {post.featuredImageUrl ? (
-          <div className={styles.media}>
-            <img src={post.featuredImageUrl} alt={post.title} />
-          </div>
-        ) : null}
-
+        {/* Header before the featured image so the headline sits near the
+            top of the page instead of below a full-height photo (QA-005). */}
         <header className={styles.header}>
           {post.category ? (
             <Link href={`/category/${post.category.slug}`} className={styles.category}>
@@ -114,6 +110,12 @@ export default async function SinglePostPage({ params }) {
             ) : null}
           </div>
         </header>
+
+        {post.featuredImageUrl ? (
+          <div className={styles.media}>
+            <img src={post.featuredImageUrl} alt={post.title} />
+          </div>
+        ) : null}
 
         <ProseContent html={post.content} />
 

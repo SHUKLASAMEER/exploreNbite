@@ -28,6 +28,23 @@
   padding-top: 8px;
 }
 
+/* Article-body readability (QA-022), scoped like the drop cap above so CMS
+   Pages keep their current text. 17px body; text blocks capped at a
+   comfortable measure (~65–75 characters per line in Open Sans) while
+   images, figures, embeds and tables — including a <p> that only wraps an
+   image, as imported WordPress content often does — keep the full column
+   width. The column itself is unchanged. */
+:global(article) .prose {
+  font-size: 17px;
+}
+
+:global(article) .prose :global(p:not(:has(img, picture, video, iframe, figure, table))),
+:global(article) .prose :global(ul),
+:global(article) .prose :global(ol),
+:global(article) .prose :global(blockquote) {
+  max-width: 62ch;
+}
+
 .prose :global(h1),
 .prose :global(h2),
 .prose :global(h3),

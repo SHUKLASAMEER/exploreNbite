@@ -1,15 +1,26 @@
-/* Featured image on the single-post page: shown complete, at its natural
-   aspect ratio. No fixed height and no object-fit — the image sets its own
-   height from its intrinsic proportions and just scales down to the content
-   column width. (Listing thumbnails elsewhere still crop on purpose.) */
+/* Featured image on the single-post page, rendered below the post header.
+   One controlled frame for every source shape (QA-005): a 3:2 box — 773×515
+   at the desktop column width, under 60vh on a 900px-tall screen — filled
+   with `object-fit: cover`, so portrait, square and wide photos all crop
+   around their centre instead of setting their own (often 1,000px+) height.
+   `width: auto` renders the image at no more than its natural width (capped
+   by the column), so small sources are never blown up past their pixels;
+   they sit centred at their own size. `max-height: 60vh` is the hard cap on
+   short screens. (Listing thumbnails elsewhere keep their own crops.) */
 .media {
   margin-bottom: 25px;
 }
 
 .media img {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 60vh;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center;
+  margin: 0 auto;
 }
 
 /* Left-aligned, no centering — matches reference/exploreNbite UI/post.html,
