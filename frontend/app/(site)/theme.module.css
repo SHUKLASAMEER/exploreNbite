@@ -40,6 +40,11 @@
   font-size: 15px;
   color: var(--enb-text);
   background: var(--enb-bg);
+  /* Inherited by all public text: a single token longer than its line (e.g.
+     the "#63PercentMoreProtein" post title) wraps instead of overflowing
+     the column on narrow screens. Ordinary words are unaffected — this only
+     breaks a word that cannot fit on a line by itself. */
+  overflow-wrap: break-word;
 }
 
 .themeRoot h1,

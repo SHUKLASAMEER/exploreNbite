@@ -57,8 +57,14 @@
     padding: 30px 20px 50px;
   }
 
+  /* Stretch, not the desktop `flex-start`: in a column flexbox the cross
+     axis is width, so `flex-start` sized `.main` to its content — an
+     unbreakable title token pushed it past the viewport (clipped by the
+     html/body overflow rules, lopsided gutters), and short content (the
+     contact form, the 404) shrank it below the container width. */
   .columns {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .sidebar {
