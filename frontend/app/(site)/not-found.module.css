@@ -1,0 +1,30 @@
+/* Public 404 page — layout only; typography, colors, buttons and the search
+   field come from the shared PageHeader / Button / Sidebar search styles. */
+.code {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--enb-accent);
+}
+
+.text {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 24.2px;
+  color: var(--enb-text);
+}
+
+.search {
+  max-width: 420px;
+  margin: 32px 0 40px;
+}
+
+.searchLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--enb-text);
+}
