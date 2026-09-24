@@ -43,6 +43,9 @@
 
 .category a {
   color: var(--enb-accent);
+  /* Inline link: vertical padding widens the tap area to 24px+ without
+     changing the line's layout (QA-020). */
+  padding-block: 4px;
 }
 
 .category a:hover {

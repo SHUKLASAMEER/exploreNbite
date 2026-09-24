@@ -23,6 +23,8 @@
 .text a {
   color: inherit;
   text-decoration: none;
+  /* 24px+ tap area for a linked title, layout unchanged (QA-020). */
+  padding-block: 2px;
 }
 
 .wrap::before {

@@ -66,7 +66,11 @@ export default function SubscribeWidget({ count }) {
         Enter your email address to subscribe to this blog and receive notifications of new posts by email.
       </p>
       <form onSubmit={handleSubmit} className={styles.subscribeForm}>
+        <label htmlFor="subscribe-email" className="visually-hidden">
+          Email Address
+        </label>
         <input
+          id="subscribe-email"
           type="email"
           required
           placeholder="Email Address"

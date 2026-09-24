@@ -36,6 +36,9 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--enb-accent);
+  /* 24px+ tap area; the negative margin keeps the card layout (QA-020). */
+  padding-block: 4px;
+  margin-block: -4px;
 }
 
 .link:hover {

@@ -8,7 +8,7 @@ export default function SearchWidget() {
     <div className={styles.widget}>
       <WidgetTitle>Search</WidgetTitle>
       <form action="/search" method="get" className={styles.searchForm}>
-        <label htmlFor="sidebar-search" className="visually-hidden" style={{ display: "none" }}>
+        <label htmlFor="sidebar-search" className="visually-hidden">
           Search
         </label>
         <input

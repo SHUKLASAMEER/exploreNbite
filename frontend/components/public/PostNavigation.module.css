@@ -1,0 +1,52 @@
+/* Previous / next post links at the end of an article: the site's small
+   uppercase gold label (as on the post category) above the post title in
+   the heading font. Two columns on desktop, stacked on narrow screens. */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px 40px;
+  margin: 30px 0;
+  padding: 20px 0;
+  border-top: 1px solid var(--enb-border);
+  border-bottom: 1px solid var(--enb-border);
+}
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 260px;
+  min-width: 0;
+  color: var(--enb-heading);
+}
+
+.next {
+  text-align: right;
+  margin-left: auto;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--enb-accent);
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.link:hover .title {
+  color: var(--enb-accent);
+}
+
+@media screen and (max-width: 600px) {
+  .next {
+    text-align: left;
+  }
+}

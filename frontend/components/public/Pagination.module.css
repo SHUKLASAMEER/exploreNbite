@@ -14,6 +14,8 @@
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--enb-heading);
+  /* 24px+ tap area without moving the text (inline link) — QA-020. */
+  padding-block: 4px;
 }
 
 .wrap a:hover {

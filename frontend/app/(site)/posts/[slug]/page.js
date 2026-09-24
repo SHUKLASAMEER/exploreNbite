@@ -8,6 +8,7 @@ import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
 import Breadcrumbs from "@/components/public/Breadcrumbs";
+import PostNavigation from "@/components/public/PostNavigation";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
 import { buildMetadata, buildBlogPostingJsonLd, buildBreadcrumbJsonLd, getSeoDefaults, firstContentImage } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
@@ -54,7 +55,7 @@ async function getAbsolutePostUrl(slug) {
 
 export default async function SinglePostPage({ params }) {
   const { slug } = await params;
-  const { post, error, notFound: postNotFound } = await getPublicPostBySlug(slug);
+  const { post, adjacent, error, notFound: postNotFound } = await getPublicPostBySlug(slug);
 
   if (postNotFound) {
     notFound();
@@ -173,6 +174,8 @@ export default async function SinglePostPage({ params }) {
             ))}
           </div>
         ) : null}
+
+        <PostNavigation previous={adjacent?.previous} next={adjacent?.next} />
 
         {post.author ? (
           <>

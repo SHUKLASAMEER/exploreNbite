@@ -60,7 +60,11 @@ export default function CommentForm({ postId }) {
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.row}>
         <div className={styles.field}>
+          <label htmlFor="comment-name" className="visually-hidden">
+            Name
+          </label>
           <input
+            id="comment-name"
             type="text"
             required
             placeholder="Name"
@@ -71,7 +75,11 @@ export default function CommentForm({ postId }) {
           />
         </div>
         <div className={styles.field}>
+          <label htmlFor="comment-email" className="visually-hidden">
+            Email
+          </label>
           <input
+            id="comment-email"
             type="email"
             required
             placeholder="Email"
@@ -82,7 +90,11 @@ export default function CommentForm({ postId }) {
           />
         </div>
       </div>
+      <label htmlFor="comment-message" className="visually-hidden">
+        Your comment
+      </label>
       <textarea
+        id="comment-message"
         required
         placeholder="Your comment"
         value={form.message}

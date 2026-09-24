@@ -146,7 +146,9 @@ export async function getPublicPostBySlug(slug) {
     if (!res.ok) {
       return { post: null, error: data?.error?.message ?? "Failed to load this post.", notFound: false };
     }
-    return { post: data?.post ?? null, error: null, notFound: false };
+    // `adjacent`: { previous, next } published posts in the same primary
+    // category (end-of-article navigation); either side may be null.
+    return { post: data?.post ?? null, adjacent: data?.adjacent ?? null, error: null, notFound: false };
   } catch {
     return { post: null, error: "Failed to load this post.", notFound: false };
   }

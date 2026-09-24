@@ -205,9 +205,26 @@
   gap: 14px;
 }
 
+/* 24×24 hit area around the 18px icon; the -3px margin gives it back so the
+   icons' visible size and spacing are unchanged (QA-020). */
 .socialLink {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: -3px;
   color: #000;
+}
+
+/* Desktop row: 18px-tall nav links / dropdown triggers get a 24px hit area
+   from vertical padding, with the same negative margin so the header row
+   keeps its height. (The mobile panel has its own padding below.) */
+@media (min-width: 1201px) {
+  .navLink {
+    padding-block: 3px;
+    margin-block: -3px;
+  }
 }
 
 .socialLink:hover {
@@ -375,17 +392,21 @@
     row-gap: 0;
   }
 
+  /* Full-width rows (stretch, not flex-start) so the whole row is tappable,
+     not just the text, each at least 44px tall (QA-021). */
   .nav {
     flex: 1 1 auto;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     justify-content: flex-start;
     column-gap: 0;
     row-gap: 2px;
   }
 
   .navLink {
-    display: block;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
     padding: 10px 4px;
     font-size: 14px;
     letter-spacing: 0.4px;
@@ -408,6 +429,7 @@
     align-items: center;
     justify-content: flex-start;
     width: 100%;
+    min-height: 44px;
     padding: 10px 4px;
   }
 
@@ -421,6 +443,9 @@
   }
 
   .navDropdownLink {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
     padding: 8px 4px;
     text-transform: uppercase;
     font-size: 13px;

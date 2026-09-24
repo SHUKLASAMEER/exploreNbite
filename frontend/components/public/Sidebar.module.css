@@ -138,6 +138,13 @@
   line-height: 1.6;
 }
 
+/* Inline post-title links: vertical padding gives a 24px+ tap area without
+   changing line spacing (QA-020). */
+.recPostList a,
+.recentList a {
+  padding-block: 3px;
+}
+
 .recPostList a {
   color: var(--enb-heading);
 }

@@ -94,9 +94,12 @@ const listPublic = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+// `adjacent` = { previous, next } published posts in the same primary
+// category, for the end-of-article navigation (null at either end).
 const getPublicBySlug = asyncHandler(async (req, res) => {
   const post = await postService.getBySlug(req.params.slug);
-  res.json({ post });
+  const adjacent = await postService.getAdjacentPublished(post);
+  res.json({ post, adjacent });
 });
 
 module.exports = {

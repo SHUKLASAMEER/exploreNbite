@@ -38,10 +38,17 @@ const openSans = Open_Sans({
 export default function PublicLayout({ children }) {
   return (
     <div className={`${playfairDisplay.variable} ${openSans.variable} ${styles.themeRoot}`}>
+      {/* First focusable element: lets keyboard users jump past the header
+          and navigation. tabIndex=-1 on <main> lets it take focus. */}
+      <a href="#main" className={styles.skipLink}>
+        Skip to content
+      </a>
       <Suspense fallback={<HeaderSkeleton />}>
         <Header />
       </Suspense>
-      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>{children}</main>
+      <main id="main" tabIndex={-1} className={styles.main}>
+        {children}
+      </main>
       <Suspense fallback={<FooterSkeleton />}>
         <Footer />
       </Suspense>

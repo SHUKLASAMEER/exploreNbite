@@ -547,6 +547,32 @@ async function getBySlug(slug) {
   return toPublicPost(post);
 }
 
+// Previous / next published post within the post's primary category, for
+// the end-of-article navigation. "previous" is the nearest older post and
+// "next" the nearest newer one by publishDate; id breaks ties (many imported
+// posts share a date) so the order is total and no post is skipped or
+// repeated. Read-only; either side is null at the ends of the category.
+const ADJACENT_SELECT = { id: true, title: true, slug: true };
+
+async function getAdjacentPublished(post) {
+  if (!post?.categoryId || !post.publishDate) return { previous: null, next: null };
+  const base = { status: "published", categoryId: post.categoryId };
+  const date = new Date(post.publishDate);
+  const [previous, next] = await Promise.all([
+    prisma.post.findFirst({
+      where: { ...base, OR: [{ publishDate: { lt: date } }, { publishDate: date, id: { lt: post.id } }] },
+      orderBy: [{ publishDate: "desc" }, { id: "desc" }],
+      select: ADJACENT_SELECT,
+    }),
+    prisma.post.findFirst({
+      where: { ...base, OR: [{ publishDate: { gt: date } }, { publishDate: date, id: { gt: post.id } }] },
+      orderBy: [{ publishDate: "asc" }, { id: "asc" }],
+      select: ADJACENT_SELECT,
+    }),
+  ]);
+  return { previous, next };
+}
+
 async function update(rawId, body) {
   const id = parseId(rawId);
 
@@ -714,6 +740,7 @@ module.exports = {
   create,
   getById,
   getBySlug,
+  getAdjacentPublished,
   update,
   remove,
   bulkRemove,
