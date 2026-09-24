@@ -29,6 +29,15 @@
   top: 24px;
 }
 
+/* From 1201px the header row is sticky too (Header.module.css): 64px tall —
+   10px padding + 44px logo + 10px padding. Pin the badges 16px below it
+   instead of 24px from the viewport top, where they slid under the header. */
+@media (min-width: 1201px) {
+  .stickyBadgeBlock {
+    top: calc(64px + 16px);
+  }
+}
+
 @media screen and (max-width: 980px) {
   /* Stacked layout: the badge block returns to normal document flow. */
   .stickyBadgeBlock {
