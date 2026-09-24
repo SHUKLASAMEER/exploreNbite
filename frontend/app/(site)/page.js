@@ -12,6 +12,8 @@ export async function generateMetadata() {
     path: "/",
     title: { absolute: tagline ? `${siteName} — ${tagline}` : siteName },
     description,
+    fallbackDescription: description,
+    imageAlt: siteName,
     defaultImage: ogImage,
     siteName,
   });

@@ -14,6 +14,8 @@ export async function generateMetadata() {
     path: "/books",
     title: "My Books",
     description,
+    fallbackDescription: description,
+    imageAlt: `My Books — ${siteName}`,
     defaultImage: ogImage,
     siteName,
   });

@@ -4,6 +4,7 @@ import Sidebar from "@/components/public/Sidebar";
 import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
+import PageHeader from "@/components/public/PageHeader";
 import { getPublicCategoryBySlug, getPublicPosts } from "@/lib/publicApi";
 import { buildMetadata, buildBreadcrumbJsonLd, buildCollectionPageJsonLd, getSeoDefaults } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
@@ -12,11 +13,13 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const { category } = await getPublicCategoryBySlug(slug);
   if (!category) return {};
-  const { siteName, ogImage } = await getSeoDefaults();
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: `/category/${category.slug}`,
     title: category.name,
-    description: category.description ?? `Posts filed under ${category.name} on ${siteName}.`,
+    description: [category.description, `Posts filed under ${category.name} on ${siteName}.`],
+    fallbackDescription: description,
+    imageAlt: `${category.name} — ${siteName}`,
     defaultImage: ogImage,
     siteName,
   });
@@ -63,13 +66,12 @@ export default async function CategoryPage({ params, searchParams }) {
   ];
 
   return (
-    // No page title/description here — the live site's category archives
-    // (/category/home/, /category/must-visit/) render straight into the
-    // post grid with no <h1> or intro text at all (verified against the
-    // live HTML; only the <title> tag and browser tab carry the category
-    // name). Matching that exactly rather than guessing a header belongs.
+    // The category name is the page's one <h1> (QA-013), in the same
+    // PageHeader used by Books / Awards / CMS pages. The old live site had no
+    // heading on category archives at all.
     <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
       <JsonLd data={jsonLd} />
+      <PageHeader title={category.name} />
       <PostList
         posts={posts}
         error={error}

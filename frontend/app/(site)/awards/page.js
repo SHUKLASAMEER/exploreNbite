@@ -9,11 +9,13 @@ import JsonLd from "@/components/JsonLd";
 import gridStyles from "@/components/public/Grid.module.css";
 
 export async function generateMetadata() {
-  const { siteName, ogImage } = await getSeoDefaults();
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: "/awards",
     title: "Mentions, Awards & Accolades",
     description: `Recognition, features and mentions for ${siteName}.`,
+    fallbackDescription: description,
+    imageAlt: `Mentions, Awards & Accolades — ${siteName}`,
     defaultImage: ogImage,
     siteName,
   });

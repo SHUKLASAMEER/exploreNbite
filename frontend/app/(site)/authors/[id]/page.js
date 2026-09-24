@@ -16,12 +16,14 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const { author } = await getPublicAuthorById(id);
   if (!author) return {};
-  const { siteName, ogImage } = await getSeoDefaults();
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: `/authors/${author.id}`,
     title: author.name,
-    description: author.bio ?? `Posts by ${author.name} on ${siteName}.`,
-    image: author.photoUrl ?? undefined,
+    description: [author.bio, `Posts by ${author.name} on ${siteName}.`],
+    fallbackDescription: description,
+    image: author.photoUrl,
+    imageAlt: author.name,
     defaultImage: ogImage,
     siteName,
   });
@@ -61,7 +63,7 @@ export default async function AuthorPage({ params, searchParams }) {
           </span>
         )}
         <div>
-          <p className={styles.authorName}>{author.name}</p>
+          <h1 className={styles.authorName}>{author.name}</h1>
           {author.bio ? <p className={styles.authorBio}>{author.bio}</p> : null}
         </div>
       </div>

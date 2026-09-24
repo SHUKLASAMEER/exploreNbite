@@ -10,11 +10,13 @@ import { buildMetadata, getSeoDefaults } from "@/lib/seo";
 // Search-result pages are useful to visitors but not something search
 // engines should index (thin, query-dependent, near-infinite variants).
 export async function generateMetadata() {
-  const { siteName, ogImage } = await getSeoDefaults();
+  const { siteName, description, ogImage } = await getSeoDefaults();
   return buildMetadata({
     path: "/search",
     title: "Search",
     description: `Search posts on ${siteName}.`,
+    fallbackDescription: description,
+    imageAlt: `Search — ${siteName}`,
     defaultImage: ogImage,
     siteName,
     noindex: true,

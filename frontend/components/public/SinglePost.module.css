@@ -240,6 +240,12 @@
   color: var(--enb-heading);
 }
 
+/* The author archive renders the name as its page <h1>; keep the body font
+   the <p> version had instead of the theme's heading font. */
+.authorBox .authorName {
+  font-family: var(--font-body);
+}
+
 .authorName a {
   color: var(--enb-heading);
 }

@@ -269,6 +269,14 @@
   background-repeat: no-repeat;
 }
 
+/* Homepage only: the <h1> wrapping the site-title link. Adds no styling of
+   its own — the link inside keeps .siteTitle's look. */
+.siteTitleHeading {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .siteTitle {
   display: block;
   font-family: var(--font-heading);

@@ -8,7 +8,7 @@ import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
-import { buildMetadata, buildBlogPostingJsonLd, buildBreadcrumbJsonLd, getSeoDefaults } from "@/lib/seo";
+import { buildMetadata, buildBlogPostingJsonLd, buildBreadcrumbJsonLd, getSeoDefaults, firstContentImage } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
 import { formatDate } from "@/lib/formatDate";
 import styles from "@/components/public/SinglePost.module.css";
@@ -22,8 +22,13 @@ export async function generateMetadata({ params }) {
   return buildMetadata({
     path: `/posts/${post.slug}`,
     title: post.title,
-    description: post.shortDescription ?? description,
-    image: post.featuredImageUrl ?? undefined,
+    // Excerpt first; the article body when the excerpt is missing or short.
+    description: [post.shortDescription, post.content],
+    fallbackDescription: description,
+    // Featured image, else the first image in the article body, else the
+    // site default (category has no image field to fall back to).
+    image: [post.featuredImageUrl, firstContentImage(post.content)],
+    imageAlt: post.title,
     defaultImage: ogImage,
     siteName,
     type: "article",
@@ -74,7 +79,12 @@ export default async function SinglePostPage({ params }) {
   // Structured data — BlogPosting (this is a blog) + a Home -> Category ->
   // Post breadcrumb. Only reached for a genuinely published post (backend
   // getBySlug forces status === "published"); a draft 404s above.
-  const articleJsonLd = buildBlogPostingJsonLd({ post, siteName: seo.siteName, logoUrl: seo.logoUrl });
+  const articleJsonLd = buildBlogPostingJsonLd({
+    post,
+    siteName: seo.siteName,
+    logoUrl: seo.logoUrl,
+    image: firstContentImage(post.content) || seo.ogImage,
+  });
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: "Home", path: "/" },
     post.category ? { name: post.category.name, path: `/category/${post.category.slug}` } : null,

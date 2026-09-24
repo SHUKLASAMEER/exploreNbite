@@ -27,10 +27,19 @@ export async function generateMetadata({ params }) {
   const { page } = await getPublicPageBySlug(slug);
   if (!page) return {};
   const { siteName, description, ogImage } = await getSeoDefaults();
+  // Pages built around the enquiry form (Contact, Work With Me) can have
+  // almost no body text — Contact's is just "Contact" — so they also offer a
+  // description of what the page actually does.
+  const hasForm = page.pageType === "contact" || page.pageType === "work_with_me";
   return buildMetadata({
     path: `/pages/${page.slug}`,
     title: page.title,
-    description: stripHtmlToText(page.content) || description,
+    description: [
+      page.content,
+      hasForm ? `${page.title} — use the form on this page to get in touch with ${siteName}.` : null,
+    ],
+    fallbackDescription: description,
+    imageAlt: `${page.title} — ${siteName}`,
     defaultImage: ogImage,
     siteName,
   });

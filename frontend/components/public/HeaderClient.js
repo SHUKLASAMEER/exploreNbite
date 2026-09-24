@@ -255,9 +255,19 @@ export default function HeaderClient({ siteTitle, logoUrl, tagline, heroImageUrl
       </div>
 
       <div className={styles.hero} style={heroImageUrl ? { backgroundImage: `url(${heroImageUrl})` } : undefined}>
-        <Link href="/" className={styles.siteTitle}>
-          {siteTitle}
-        </Link>
+        {/* The site title is the homepage's one <h1>; inner pages have their
+            own page-title <h1>, so there it stays a plain link. */}
+        {pathname === "/" ? (
+          <h1 className={styles.siteTitleHeading}>
+            <Link href="/" className={styles.siteTitle}>
+              {siteTitle}
+            </Link>
+          </h1>
+        ) : (
+          <Link href="/" className={styles.siteTitle}>
+            {siteTitle}
+          </Link>
+        )}
         <div className={styles.tagline}>{tagline}</div>
       </div>
     </header>
