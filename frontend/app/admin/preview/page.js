@@ -22,7 +22,7 @@ export default async function AdminPostPreviewPage() {
 
   return (
     <PublicThemeShell>
-      <TwoColumnLayout sidebar={<Sidebar layout="post" />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
         <PostPreview />
       </TwoColumnLayout>
     </PublicThemeShell>

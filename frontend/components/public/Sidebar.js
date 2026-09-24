@@ -9,19 +9,22 @@ import SubscribeWidget from "./SubscribeWidget";
 import styles from "./Sidebar.module.css";
 
 // Sidebar widget composition + order is admin-editable per layout (see the
-// admin Sidebar screen -> GET /api/sidebar). This map is only the fallback
-// used when that fetch fails or a layout has no rows yet — it's the original,
-// verified-against-the-live-site composition, so the sidebar renders
-// identically until an admin changes something:
-//   - front page "/":     Search, Recommended post, Facebook, Subscribe,
-//                          Twitter, Award photo, Tripoto badge, IndiBlogger
-//                          badge, Sur.ly "Brilliantly SAFE!" badge.
-//   - category archives:  identical stack with Recent Posts prepended.
-//   - post:                Recent Posts, then Search
-//   - page:                Recommended Post, Recent Posts
-//   - contact/utility:     Search, Recommended Post, Recent Posts
+// admin Sidebar screen -> GET /api/sidebar). Which layout each route uses is
+// fixed here in code, so every page of the same kind gets the same sidebar:
+//   - "home" — the one full blog sidebar: home, category archives, single
+//     posts, search results and author archives (and the admin post preview).
+//   - "page" — compact: Books, Awards, standard CMS pages incl. Work With Me,
+//     and the 404 page (the <Sidebar /> default).
+//   - "contact" — compact: the Contact page.
+// "archive", "post" and "utility" remain in the registry but no route renders
+// them any more.
+//
+// This map is only the fallback used when the config fetch fails or a layout
+// has no rows yet. The full "home" order is the canonical one: Search,
+// Recommended post, Recent Posts, Subscribe, Facebook, Twitter, Award photo,
+// then the Tripoto / IndiBlogger / Sur.ly badges.
 const DEFAULT_LAYOUTS = {
-  home: ["search", "recommended", "facebook", "subscribe", "twitter", "award", "tripoto", "indiblogger", "surly"],
+  home: ["search", "recommended", "recentPosts", "subscribe", "facebook", "twitter", "award", "tripoto", "indiblogger", "surly"],
   archive: [
     "recentPosts",
     "search",
@@ -109,7 +112,7 @@ export default async function Sidebar({ layout = "page", excludePostId } = {}) {
         return (
           <SocialWidget
             key={key}
-            heading="Recent posts"
+            heading="Follow me on Facebook"
             headingHref={settings?.socialFacebook}
             label="View on Facebook"
             href={settings?.socialFacebook}

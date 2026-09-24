@@ -22,12 +22,12 @@ async function parseJsonSafe(res) {
 // public page shape). The widget registry (labels, which are sticky) comes
 // from the API so it's never duplicated here.
 const LAYOUT_LABELS = {
-  home: "Home",
-  archive: "Category archives",
-  post: "Single post",
-  page: "Standard pages",
-  contact: "Contact / Work With Me",
-  utility: "Search & author archives",
+  home: "Blog sidebar — home, categories, posts, search, authors",
+  archive: "Category archives (not used — categories use the Blog sidebar)",
+  post: "Single post (not used — posts use the Blog sidebar)",
+  page: "Standard pages — books, awards, about, work with me",
+  contact: "Contact page",
+  utility: "Search & author archives (not used — they use the Blog sidebar)",
 };
 
 function move(list, index, delta) {

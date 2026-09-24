@@ -33,12 +33,25 @@ const WIDGETS = [
 const WIDGET_KEYS = WIDGETS.map((w) => w.key);
 const STICKY_KEYS = WIDGETS.filter((w) => w.sticky).map((w) => w.key);
 
-// The current, verified-against-the-live-site sidebar composition. This is the
-// seed source (migration + prisma/seed.js) and the fallback the frontend uses
-// if the config API is unavailable — so the sidebar renders identically to
-// before this feature until an admin changes something.
+// Seed source (prisma/seed.js) for fresh databases; the frontend keeps a
+// matching fallback in components/public/Sidebar.js. "home" is the one full
+// blog sidebar, used by home, category, post, search and author pages, in
+// the canonical order. "page" and "contact" are the compact variants.
+// "archive", "post" and "utility" are no longer rendered by any route; their
+// seeds are kept as they were.
 const DEFAULT_LAYOUTS = {
-  home: ["search", "recommended", "facebook", "subscribe", "twitter", "award", "tripoto", "indiblogger", "surly"],
+  home: [
+    "search",
+    "recommended",
+    "recentPosts",
+    "subscribe",
+    "facebook",
+    "twitter",
+    "award",
+    "tripoto",
+    "indiblogger",
+    "surly",
+  ],
   archive: [
     "recentPosts",
     "search",

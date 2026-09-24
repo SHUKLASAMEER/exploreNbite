@@ -40,7 +40,7 @@ export default async function AuthorPage({ params, searchParams }) {
 
   if (authorError || !author) {
     return (
-      <TwoColumnLayout sidebar={<Sidebar layout="utility" />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
         <StateMessage kind="error" title="Couldn't load this author.">
           {authorError}
         </StateMessage>
@@ -51,7 +51,7 @@ export default async function AuthorPage({ params, searchParams }) {
   const { posts, pagination, error } = await getPublicPosts({ author: author.id, page });
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar layout="utility" />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
       <div className={styles.authorBox} style={{ marginTop: 0, borderTop: "none", paddingTop: 0, marginBottom: 30 }}>
         {author.photoUrl ? (
           <img src={author.photoUrl} alt={author.name} className={styles.authorAvatar} />

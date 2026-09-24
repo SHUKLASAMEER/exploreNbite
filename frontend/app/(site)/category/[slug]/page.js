@@ -35,7 +35,7 @@ export default async function CategoryPage({ params, searchParams }) {
 
   if (categoryError || !category) {
     return (
-      <TwoColumnLayout sidebar={<Sidebar layout="archive" />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
         <StateMessage kind="error" title="Couldn't load this category.">
           {categoryError}
         </StateMessage>
@@ -68,7 +68,7 @@ export default async function CategoryPage({ params, searchParams }) {
     // post grid with no <h1> or intro text at all (verified against the
     // live HTML; only the <title> tag and browser tab carry the category
     // name). Matching that exactly rather than guessing a header belongs.
-    <TwoColumnLayout sidebar={<Sidebar layout="archive" />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
       <JsonLd data={jsonLd} />
       <PostList
         posts={posts}

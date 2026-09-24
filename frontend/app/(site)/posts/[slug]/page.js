@@ -56,7 +56,7 @@ export default async function SinglePostPage({ params }) {
 
   if (error || !post) {
     return (
-      <TwoColumnLayout sidebar={<Sidebar layout="post" />}>
+      <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
         <StateMessage kind="error" title="Couldn't load this post.">
           {error}
         </StateMessage>
@@ -88,7 +88,7 @@ export default async function SinglePostPage({ params }) {
   ];
 
   return (
-    <TwoColumnLayout sidebar={<Sidebar layout="post" excludePostId={post.id} />}>
+    <TwoColumnLayout sidebar={<Sidebar layout="home" excludePostId={post.id} />}>
       <JsonLd data={[articleJsonLd, breadcrumbJsonLd]} />
       <article>
         {/* Header before the featured image so the headline sits near the
