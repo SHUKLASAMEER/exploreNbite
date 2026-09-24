@@ -1,0 +1,42 @@
+/* Lightweight breadcrumb trail above a page/article title: small body-font
+   text in the site's meta grey, links in the text colour with the gold
+   accent on hover. No box or background. Wraps normally on narrow screens
+   (flex-wrap + the theme's overflow-wrap), never scrolls sideways. Focus
+   ring comes from the theme's shared a:focus-visible rule. */
+.nav {
+  margin-bottom: 14px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--enb-meta);
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: inline;
+  min-width: 0;
+}
+
+.separator {
+  margin: 0 8px;
+  color: var(--enb-meta);
+}
+
+.link {
+  color: var(--enb-text);
+}
+
+.link:hover {
+  color: var(--enb-accent);
+}
+
+.current {
+  color: var(--enb-meta);
+}

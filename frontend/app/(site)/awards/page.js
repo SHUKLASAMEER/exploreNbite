@@ -1,6 +1,7 @@
 import TwoColumnLayout from "@/components/public/TwoColumnLayout";
 import Sidebar from "@/components/public/Sidebar";
 import PageHeader from "@/components/public/PageHeader";
+import Breadcrumbs from "@/components/public/Breadcrumbs";
 import AwardCard from "@/components/public/AwardCard";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicAwards } from "@/lib/publicApi";
@@ -30,14 +31,16 @@ export default async function AwardsPage() {
   // image, optional source link, mostly-absent dates, no issuer field) has
   // no structured shape that maps cleanly to a Schema.org award/credential
   // type without inventing issuers or dates — see the SEO task report.
-  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+  const crumbs = [
     { name: "Home", path: "/" },
     { name: "Mentions, Awards & Accolades", path: "/awards" },
-  ]);
+  ];
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(crumbs);
 
   return (
     <TwoColumnLayout sidebar={<Sidebar layout="page" />}>
       <JsonLd data={breadcrumbJsonLd} />
+      <Breadcrumbs crumbs={crumbs} />
       <PageHeader title="Mentions, Awards & Accolades" />
       {error ? (
         <StateMessage kind="error" title="Couldn't load awards.">

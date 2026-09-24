@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import TwoColumnLayout from "@/components/public/TwoColumnLayout";
 import Sidebar from "@/components/public/Sidebar";
 import PageHeader from "@/components/public/PageHeader";
+import Breadcrumbs from "@/components/public/Breadcrumbs";
 import ProseContent from "@/components/public/ProseContent";
 import ContactForm from "@/components/public/ContactForm";
 import StateMessage from "@/components/public/StateMessage";
@@ -70,14 +71,16 @@ export default async function CmsPage({ params }) {
 
   // Home -> Page breadcrumb. Pages are a flat collection (no nesting), so
   // that two-level trail is the whole meaningful hierarchy.
-  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+  const crumbs = [
     { name: "Home", path: "/" },
     { name: page.title, path: `/pages/${page.slug}` },
-  ]);
+  ];
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(crumbs);
 
   return (
     <TwoColumnLayout sidebar={<Sidebar layout={isContact ? "contact" : "page"} />}>
       <JsonLd data={breadcrumbJsonLd} />
+      <Breadcrumbs crumbs={crumbs} />
       <PageHeader title={page.title} />
       {hasBody ? <ProseContent html={page.content} /> : null}
       {isWorkWithMe ? (

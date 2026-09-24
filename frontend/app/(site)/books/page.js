@@ -1,6 +1,7 @@
 import TwoColumnLayout from "@/components/public/TwoColumnLayout";
 import Sidebar from "@/components/public/Sidebar";
 import PageHeader from "@/components/public/PageHeader";
+import Breadcrumbs from "@/components/public/Breadcrumbs";
 import BookCard from "@/components/public/BookCard";
 import StateMessage from "@/components/public/StateMessage";
 import { getPublicBooks } from "@/lib/publicApi";
@@ -30,17 +31,16 @@ export default async function BooksPage() {
 
   // Home -> My Books breadcrumb + an ItemList of Book entities (real Book
   // CMS model: title / cover / description / year / buy links).
-  const jsonLd = [
-    buildBreadcrumbJsonLd([
-      { name: "Home", path: "/" },
-      { name: "My Books", path: "/books" },
-    ]),
-    buildBookListJsonLd({ books, path: "/books" }),
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: "My Books", path: "/books" },
   ];
+  const jsonLd = [buildBreadcrumbJsonLd(crumbs), buildBookListJsonLd({ books, path: "/books" })];
 
   return (
     <TwoColumnLayout sidebar={<Sidebar layout="page" />}>
       <JsonLd data={jsonLd} />
+      <Breadcrumbs crumbs={crumbs} />
       <PageHeader title="My Books" />
       {error ? (
         <StateMessage kind="error" title="Couldn't load books.">

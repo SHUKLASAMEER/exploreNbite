@@ -7,6 +7,7 @@ import ProseContent from "@/components/public/ProseContent";
 import CommentList from "@/components/public/CommentList";
 import CommentForm from "@/components/public/CommentForm";
 import StateMessage from "@/components/public/StateMessage";
+import Breadcrumbs from "@/components/public/Breadcrumbs";
 import { getPublicPostBySlug, getPublicComments, getPublicPosts } from "@/lib/publicApi";
 import { buildMetadata, buildBlogPostingJsonLd, buildBreadcrumbJsonLd, getSeoDefaults, firstContentImage } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
@@ -85,11 +86,13 @@ export default async function SinglePostPage({ params }) {
     logoUrl: seo.logoUrl,
     image: firstContentImage(post.content) || seo.ogImage,
   });
-  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+  // One trail for both the visible breadcrumbs and the BreadcrumbList.
+  const crumbs = [
     { name: "Home", path: "/" },
     post.category ? { name: post.category.name, path: `/category/${post.category.slug}` } : null,
     { name: post.title, path: `/posts/${post.slug}` },
-  ].filter(Boolean));
+  ].filter(Boolean);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd(crumbs);
 
   const shareLinks = [
     { name: "Twitter", href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title)}` },
@@ -101,6 +104,7 @@ export default async function SinglePostPage({ params }) {
     <TwoColumnLayout sidebar={<Sidebar layout="home" excludePostId={post.id} />}>
       <JsonLd data={[articleJsonLd, breadcrumbJsonLd]} />
       <article>
+        <Breadcrumbs crumbs={crumbs} />
         {/* Header before the featured image so the headline sits near the
             top of the page instead of below a full-height photo (QA-005). */}
         <header className={styles.header}>

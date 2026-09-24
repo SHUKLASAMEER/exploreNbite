@@ -5,6 +5,7 @@ import PostList from "@/components/public/PostList";
 import Pagination from "@/components/public/Pagination";
 import StateMessage from "@/components/public/StateMessage";
 import PageHeader from "@/components/public/PageHeader";
+import Breadcrumbs from "@/components/public/Breadcrumbs";
 import { getPublicCategoryBySlug, getPublicPosts } from "@/lib/publicApi";
 import { buildMetadata, buildBreadcrumbJsonLd, buildCollectionPageJsonLd, getSeoDefaults } from "@/lib/seo";
 import JsonLd from "@/components/JsonLd";
@@ -52,12 +53,14 @@ export default async function CategoryPage({ params, searchParams }) {
   // plain date-desc on the live site too.
   const { posts, pagination, error } = await getPublicPosts({ category: category.id, page, limit: 10 });
 
-  // Home -> Category breadcrumb + a CollectionPage node for the archive.
+  // Home -> Category breadcrumb (shared by the visible trail and the
+  // BreadcrumbList) + a CollectionPage node for the archive.
+  const crumbs = [
+    { name: "Home", path: "/" },
+    { name: category.name, path: `/category/${category.slug}` },
+  ];
   const jsonLd = [
-    buildBreadcrumbJsonLd([
-      { name: "Home", path: "/" },
-      { name: category.name, path: `/category/${category.slug}` },
-    ]),
+    buildBreadcrumbJsonLd(crumbs),
     buildCollectionPageJsonLd({
       name: category.name,
       description: category.description || undefined,
@@ -71,6 +74,7 @@ export default async function CategoryPage({ params, searchParams }) {
     // heading on category archives at all.
     <TwoColumnLayout sidebar={<Sidebar layout="home" />}>
       <JsonLd data={jsonLd} />
+      <Breadcrumbs crumbs={crumbs} />
       <PageHeader title={category.name} />
       <PostList
         posts={posts}
